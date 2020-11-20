@@ -17,7 +17,7 @@ public:
     //    Initialization and I/O
     //***************************************
     Graph(int number_of_v);
-    void pi0();
+    int* pi0();
     void input_x(float** input_x);
     void input_theta(float* input_theta);
 
@@ -61,6 +61,7 @@ int* Graph::greedy_move(int* pi){
                 best_a = i;
                 best_U = j;
             }
+            free(new_pi);
         }
     }
     min_pi = move(best_a, best_U, pi);
@@ -90,10 +91,11 @@ Graph::Graph(int number_of_vertex){
     p = (int*)malloc (number_of_v * sizeof (int));
     yOfPi = (int*)malloc (number_of_e * sizeof (int));
 }
-void Graph::pi0(){
+int* Graph::pi0(){
     for(int i = 0; i < number_of_v; i++){
         p[i] = 0;
     }
+    return p;
 }
 void Graph::input_theta(float* input_theta){
     if(input_theta!=0){
@@ -232,6 +234,7 @@ int main(int argc, char *argv[])
     Graph graph = Graph(5);
     graph.input_x(0);
     graph.input_theta(0);
+    graph.greedy_move(graph.pi0());
 
 
 }
