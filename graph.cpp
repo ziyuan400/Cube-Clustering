@@ -135,7 +135,7 @@ int* Graph::move(int a,int U, int* pi){
 
 
 int* Graph::greedy_move(int* pi){
-    int best_a=0, best_U=0, gruop = 0;
+    int best_a=-1, best_U=-1, gruop = 0;
     int *min_pi, *new_pi;
     float phi_y_pi = phi(pi), new_phi, min_diff = 0;
     gruop = num_of_gruops(pi);                                       //num_of_gruops = 1 for {0,0,0,0,0}
@@ -154,15 +154,16 @@ int* Graph::greedy_move(int* pi){
             free(new_pi);
         }
     }
-    min_pi = move(best_a, best_U, pi);
-    plotter.print_to_cout("diff", min_pi, number_of_v, "MIN_PI TO FIND NEXT MOVE", min_diff);
 
-    if(min_diff > 0){
+    if(min_diff > 0 && best_U >=0){
+        min_pi = move(best_a, best_U, pi);
+        plotter.print_to_cout("diff", min_pi, number_of_v, "MIN_PI TO FIND NEXT MOVE", min_diff);
         free(pi);
         return greedy_move(min_pi);
     }else{
-        p = min_pi;
-        return min_pi;
+
+        plotter.print_to_cout("diff", pi, number_of_v, "FINAL PARTITION", min_diff);
+        return pi;
     }
 }
 

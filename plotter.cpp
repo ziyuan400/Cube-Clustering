@@ -7,9 +7,11 @@ Plotter::Plotter()
 }
 
 void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, float diff){
-    std::cout << "**************************";
-    std::cout << name;
-    std::cout << "**************************\n";
+    if(name.compare("")!=0){
+        std::cout << "**************************";
+        std::cout << name;
+        std::cout << "**************************\n";
+    }
 
     //******************************************************************************
     //    Print Pi and the diffrence between phi(Pi) and a given min value
@@ -29,7 +31,6 @@ void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::s
         std::cout << diff;
     }
 
-
     //***************************************
     //   Default
     //***************************************
@@ -41,17 +42,19 @@ void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::s
     std::cout <<("\n");
     std::cout<<std::flush;
 
+    if(name.compare("")!=0){
+        std::cout << "\n\n " ;
+    }
 
 }
 
 
 void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, int second_dim){
-    std::cout << "**************************";
-    std::cout << name;
-    std::cout << "**************************\n";
-
-
-
+    if(name.compare("")!=0){                                            //Seprater if needed
+        std::cout << "**************************";
+        std::cout << name;
+        std::cout << "**************************\n";
+    }
     //***************************************
     //    Print A Set Of Int Array
     //***************************************
