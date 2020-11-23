@@ -29,6 +29,10 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 if(ANDROID)
   add_library(Cube-Clustering SHARED
+    plotter.h
+    plotter.cpp
+    graph.cpp
+    graph.h
     main.cpp
     mainwindow.cpp
     mainwindow.h
@@ -36,6 +40,10 @@ if(ANDROID)
   )
 else()
   add_executable(Cube-Clustering
+    plotter.h
+    plotter.cpp
+    graph.cpp
+    graph.h
     main.cpp
     mainwindow.cpp
     mainwindow.h
