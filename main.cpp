@@ -1,7 +1,11 @@
 #include "mainwindow.h"
 
+#include <iostream>
+//#include <format>
 #include <QApplication>
 #include <QCoreApplication>             //assert, malloc and random are some how packaged in it
+#include <QPushButton>
+using namespace std;
 
 class Graph{
 private:
@@ -24,7 +28,7 @@ public:
     //***************************************
     //    Computations
     //***************************************
-    float phi();
+
     float phi(int* pi);
     int* greedy_move(int* pi);
 
@@ -37,7 +41,7 @@ public:
     int get_y_of_pi(int a, int a_prime);
     int num_of_gruops(int* pi);
     int* get_y_from_pi(int *pi);
-
+    void print(char c);
     //***************************************
     //    To-Do list
     //***************************************
@@ -47,31 +51,6 @@ public:
 
 int greedy_move();
 int kl(Graph graph, int* pi);
-
-int* Graph::greedy_move(int* pi){
-    int best_a=0, best_U=0, min_diff = 0;
-    int *min_pi, *new_pi;
-    float phi_y_pi = phi(), new_phi;
-    for(int i = 0; i < number_of_v; i++){
-        int nog = num_of_gruops(pi);
-        for(int j = 0; j < nog; j++){
-            new_pi = move(i, j, pi);
-            new_phi = phi(new_pi);
-            if(min_diff < phi_y_pi - new_phi){
-                best_a = i;
-                best_U = j;
-            }
-            free(new_pi);
-        }
-    }
-    min_pi = move(best_a, best_U, pi);
-    if(min_diff < 0){
-        return greedy_move(min_pi);
-    }else{
-        return pi;
-    }
-
-}
 
 //int kl(Graph graph, int* pi){
 
@@ -95,7 +74,11 @@ int* Graph::pi0(){
     for(int i = 0; i < number_of_v; i++){
         p[i] = 0;
     }
-    return p;
+    int *pi = (int*)malloc (number_of_v * sizeof (int));
+    for(int i = 0; i < number_of_v; i++){
+        pi[i] = 0;
+    }
+    return pi;
 }
 void Graph::input_theta(float* input_theta){
     if(input_theta!=0){
@@ -108,15 +91,59 @@ void Graph::input_theta(float* input_theta){
 }
 
 void Graph::input_x(float** input_x){
-    if(x!=0){
+    const float MIN_RAND = 2.0, MAX_RAND = 6.0;
+    const float range = MAX_RAND - MIN_RAND;
+    if(input_x!=0){
         x = input_x;
         return;
     }
     for(int i = 0; i < number_of_e; i++){
         for(int j = 0; j < number_of_v; j++){
-            x[i][j] = random()%100;
+            x[i][j] = range * ((((float) rand()) / (float) RAND_MAX)) + MIN_RAND ;
         }
     }
+}
+
+void Graph::print(char c){
+
+
+    switch(c){
+
+    case 'x':
+        std::cout << "\n**************************\nx: ";
+        for(int i = 0; i < number_of_e; i++){
+            std::cout <<("\n");
+            std::cout <<(i);
+            std::cout <<(" : ");
+
+            for(int j = 0; j < number_of_v; j++){
+                std::cout <<(x[i][j]);
+                std::cout <<(" << ");
+            }
+        }
+        cout<<std::flush;
+
+    case 't':
+        std::cout << "\n**************************\np: \n";
+        for(int i = 0; i < number_of_v; i++){
+            std::cout << p[i];
+            std::cout << " << " ;
+
+        }
+        cout<<std::flush;
+    case 'p':
+        std::cout << "\n**************************\ntheta: \n";
+        for(int i = 0; i < number_of_v; i++){
+            std::cout << theta[i];
+            std::cout << " << " ;
+
+        }
+        cout<<std::flush;
+
+    }
+
+
+
 }
 
 //***************************************
@@ -124,21 +151,8 @@ void Graph::input_x(float** input_x){
 //    phi of y = <c, y_of_pi>
 //    c  (a, a') = <phi, x[get_edge_id(a,a')]>
 //***************************************
-float Graph::phi(){
-    for(int i = 0; i < number_of_e; i++){
-        c[i] = 0;
-        for(int j = 0; j < number_of_v; j++){
-            c[i] += x[i][j] * theta[j];
-        }
-    }
-    float phi = 0;
-    for(int i = 0; i < number_of_e; i++){
-        phi += c[i] * yOfPi[i];
-    }
-    return phi;
-}
-
 float Graph::phi(int* pi){
+    int *y = get_y_from_pi(pi);
     for(int i = 0; i < number_of_e; i++){
         c[i] = 0;
         for(int j = 0; j < number_of_v; j++){
@@ -147,22 +161,33 @@ float Graph::phi(int* pi){
     }
     float phi = 0;
     for(int i = 0; i < number_of_e; i++){
-        phi += c[i] * yOfPi[i];
+        phi += c[i] * y[i];
     }
+    free(y);
     return phi;
 }
 
 int* Graph::get_y_from_pi(int *pi){
+
+    std::cout << "\n**************************\nedge: \n";
     int *new_yOfPi = (int*)malloc (number_of_e * sizeof (int));
     for(int i = 0; i < number_of_v; i++){
         for(int j = i; j < number_of_v; j++){
             if(pi[i] == pi[j]){
-                new_yOfPi[get_edge_id(i,j)] = 1;
+                std::cout << get_edge_id(i+1,j+1) << " << " ;
+                new_yOfPi[get_edge_id(i+1,j+1)] = 1;
             }else{
-                new_yOfPi[get_edge_id(i,j)] = 0;
+                std::cout << get_edge_id(i+1,j+1) << " << " ;
+                new_yOfPi[get_edge_id(i+1,j+1)] = 0;
             }
         }
     }
+    std::cout << "\n**************************\nnew_yOfPi: \n";
+    for(int i = 0; i < number_of_e; i++){
+        std::cout << new_yOfPi[i] << " << " ;
+
+    }
+    std::cout<<std::flush;
     return new_yOfPi;
 }
 
@@ -194,8 +219,52 @@ int* Graph::move(int a,int U, int* pi){
             }
         }
     }
+    std::cout << "\n**************************\nafter: \n";
+    for(int i = 0; i < number_of_v; i++){
+        std::cout << after[i];
+        std::cout << " << " ;
+    }
+    std::cout<<std::flush;
     return after;
 }
+
+
+int* Graph::greedy_move(int* pi){
+    int best_a=0, best_U=0, min_diff = 0, gruop = 0;
+    int *min_pi, *new_pi;
+    float phi_y_pi = phi(pi), new_phi;
+    for(int i = 0; i < number_of_v; i++){
+        gruop = num_of_gruops(pi);
+        for(int j = 0; j < gruop; j++){
+            new_pi = move(i, j, pi);
+            new_phi = phi(new_pi);
+            if(min_diff < phi_y_pi - new_phi){
+                best_a = i;
+                best_U = j;
+            }
+            std::cout << "\n**************************\nnew_pi: \n";
+            for(int i = 0; i < number_of_v; i++){
+                std::cout << new_pi[i];
+                std::cout << " << " ;
+            }
+            std::cout<<std::flush;
+            std::cout<<std::flush;
+            free(new_pi);
+        }
+    }
+    min_pi = move(best_a, best_U, pi);
+
+
+    if(min_diff < 0){
+        free(pi);
+        return greedy_move(min_pi);
+    }else{
+        p = min_pi;
+        return min_pi;
+    }
+
+}
+
 //************************************************************
 //    |U|
 //************************************************************
@@ -210,14 +279,14 @@ int Graph::num_of_gruops(int* pi){
 }
 
 int Graph::get_edge_id(int start, int end){
-    assert(0 <= start < number_of_v || 0 <= end < number_of_v);
+    assert(0 < start <= number_of_v || 0 < end <= number_of_v);
     //If first vertex(start) has a greater id, swap them.
     if(start > end){
         start = start + end;
         end = start - end;
         start = start - end;
     }
-    return (start - 1) * (number_of_v * 2 - start + 2) + end - start;
+    return (start - 1) * (number_of_v * 2 - start + 2) / 2 + end - start;
 }
 
 
@@ -227,14 +296,23 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
-    w.show();
-    return a.exec();
+    QPushButton button ("Hello world !");
+//    //QTextBlock *txt = new QTextBlock();
 
+    button.show();
 
     Graph graph = Graph(5);
-    graph.input_x(0);
     graph.input_theta(0);
+    graph.input_x(0);
+    graph.print('x');
     graph.greedy_move(graph.pi0());
+
+
+    graph.print('p');
+
+    //w.addDockWidget(txt);
+    return a.exec();
+
 
 
 }
