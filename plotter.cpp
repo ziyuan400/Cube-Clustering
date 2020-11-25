@@ -6,7 +6,7 @@ Plotter::Plotter()
 
 }
 
-void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, float diff){
+Plotter* Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, float diff){
     if(name.compare("")!=0){
         std::cout << "**************************";
         std::cout << name;
@@ -45,11 +45,11 @@ void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::s
     if(name.compare("")!=0){
         std::cout << "\n\n " ;
     }
-
+    return this;
 }
 
 
-void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, int second_dim){
+Plotter* Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::string name, int second_dim){
     if(name.compare("")!=0){                                            //Seprater if needed
         std::cout << "**************************";
         std::cout << name;
@@ -119,4 +119,6 @@ void Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, std::s
     }
     std::cout <<("\n");
     std::cout<<std::flush;
+
+    return this;
 }

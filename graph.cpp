@@ -65,6 +65,93 @@ void Graph::print(char c){
         plotter.print_to_cout("int", p, number_of_v, "Partation PI", 0);
     }
 }
+//************************************************************
+//    Move an Element to Group U
+//    Make sure group Number tight  {0,1,4,2}-->{0,1,3,2}
+//    Tight: (if 0 < n < |U|, n in pi)
+//************************************************************
+int* Graph::move(int a,int U, int* pi){
+    int *after;
+    int max = 0, u0 = pi[a];
+    bool empty_group = true;
+    after =  (int*)malloc(sizeof(int) * number_of_v);
+    for(int i = 0; i < number_of_v; i++){
+        after[i] = pi [i];
+        if (max < pi[i]){
+            max = pi[i];
+        }
+//------The New Empty Group May Be The Largest Group id-----//
+        if (max < U){
+            max = U;
+        }
+        if (u0 == pi[i] && i != a){
+            empty_group = false;
+        }
+    }
+    after[a] = U;
+    if(empty_group == true){
+        for(int i = 0; i < number_of_v; i++){
+            if(after[i] == max){
+                after[i] = u0;
+            }
+        }
+    }
+    return after;
+}
+
+int* Graph::get_y_from_pi(int *pi){
+    int *new_yOfPi = (int*)malloc (number_of_e * sizeof (int));
+    for(int i = 0; i < number_of_v; i++){
+        for(int j = i; j < number_of_v; j++){
+            if(pi[i] == pi[j]){
+                new_yOfPi[get_edge_id(i+1,j+1)] = 1;
+            }else{
+                new_yOfPi[get_edge_id(i+1,j+1)] = 0;
+            }
+        }
+    }
+    //plotter.print_to_cout("int", new_yOfPi, number_of_e, "NEW Y OF PI", 0);
+    return new_yOfPi;
+
+}
+
+//************************************************************
+//    |U|
+//************************************************************
+int Graph::num_of_gruops(int* pi){
+    int max = pi[0];
+    for(int i = 0; i < number_of_v; i++){
+        if (max < pi[i]){
+            max = pi[i];
+        }
+    }
+    return max+1;
+}
+
+
+//************************************************************
+//      Get posotion of the bivertex relation form two nodes
+//      TODO:  extend to TRIVERTEX relation
+//       e |  1, 2, 3, 4, 5
+//      ---|-----------------
+//      1  |  0  1  2  3  4
+//      2  |  5  6  7  8
+//      3  |  9  10 11
+//      4  |  12 13
+//      5  |  14
+//************************************************************
+
+int Graph::get_edge_id(int start, int end){
+    assert(0 < start <= number_of_v || 0 < end <= number_of_v);
+    //If first vertex(start) has a greater id, swap them.
+    if(start > end){
+        start = start + end;
+        end = start - end;
+        start = start - end;
+    }
+    return (start - 1) * (number_of_v * 2 - start + 2) / 2 + end - start;
+}
+
 //***************************************
 //    (6, 19)
 //    phi of y = <c, y_of_pi>
@@ -86,59 +173,17 @@ float Graph::phi(int* pi){
     return phi;
 }
 
-int* Graph::get_y_from_pi(int *pi){
-    int *new_yOfPi = (int*)malloc (number_of_e * sizeof (int));
-    for(int i = 0; i < number_of_v; i++){
-        for(int j = i; j < number_of_v; j++){
-            if(pi[i] == pi[j]){
-                new_yOfPi[get_edge_id(i+1,j+1)] = 1;
-            }else{
-                new_yOfPi[get_edge_id(i+1,j+1)] = 0;
-            }
-        }
-    }
-    //plotter.print_to_cout("int", new_yOfPi, number_of_e, "NEW Y OF PI", 0);
-    return new_yOfPi;
-
-}
-
 //************************************************************
 //    1.Copy the origin partition. Remember to FREE it.
 //    2.Change the gruop-id to the new one.
 //    3.Reassign group-id if the last element deleted.
 //************************************************************
 
-int* Graph::move(int a,int U, int* pi){
-    int *after;
-    int max = pi[0], u0 = pi[a];
-    bool empty_group = true;
-    after =  (int*)malloc(sizeof(int) * number_of_v);
-    for(int i = 0; i < number_of_v; i++){
-        after[i] = pi [i];
-        if (max < pi[i]){
-            max = pi[i];
-        }
-        if (u0 == pi[i] && i != a){
-            empty_group = false;
-        }
-    }
-    after[a] = U;
-    if(empty_group == true){
-        for(int i = 0; i < number_of_v; i++){
-            if(after[i] == max){
-                after[i] = u0;
-            }
-        }
-    }
-    return after;
-}
-
-
 int* Graph::greedy_move(int* pi){
     int best_a=-1, best_U=-1, gruop = 0;
     int *min_pi, *new_pi;
     float phi_y_pi = phi(pi), new_phi, min_diff = 0;
-    gruop = num_of_gruops(pi);                                       //num_of_gruops = 1 for {0,0,0,0,0}
+    gruop = num_of_gruops(pi);                                       //num_of_gruops = 1 for initial pi {0,0,0,0,0}
 
     for(int i = 0; i < number_of_v; i++){
         for(int j = 0; j < gruop+1; j++){
@@ -167,28 +212,138 @@ int* Graph::greedy_move(int* pi){
     }
 }
 
-//************************************************************
-//    |U|
-//************************************************************
-int Graph::num_of_gruops(int* pi){
-    int max = pi[0];
+int* Graph::kl(int* pi){
+
+
+    //*****************************************************************************
+    //    Initialization
+    //    There are Total |V| + 1  PIs and Therefore |V| + 1 PHIs  (including initial state)
+    //    There are Total |V| DELTAs between them and |V| As
+    //*****************************************************************************
+    float min_delta = 0, *delta_seq = new float[number_of_v],
+            *phi_seq = new float[number_of_v + 1];
+    int *min_pi = 0, *a = new int[number_of_v];
+    int **pi_seq = new int*[number_of_v + 1];
+    for(int i = 0; i < number_of_v; i++){               //initialize to {1,2,3,4,5}
+        a[i] = i;
+        delta_seq[i] = 0;                                   //initialize to 0 ????
+    }
+    pi_seq[0] = pi;
+
+    plotter.print_to_cout("int", pi_seq[0], number_of_v, "PI - Sequence", 0);
+    //*****************************************************************************
+    //    Main Loop
+    //*****************************************************************************
+
+    int *new_pi, total_groups, best_a = -1, best_U = -1;
+    float new_phi, new_delta;
     for(int i = 0; i < number_of_v; i++){
-        if (max < pi[i]){
-            max = pi[i];
+    //------------The rest initialization will be done until first delta is calculated------//
+        best_a = -1;
+
+        total_groups = num_of_gruops(pi_seq[i]);
+        phi_seq[i] = phi(pi_seq[i]);
+        for(int j = 0; j < number_of_v; j++){
+            while(a[j] < 0){
+                j++;
+            }
+            for(int k = 0; k < total_groups + 1; k++){
+                //*****************************************************************************
+                //    Prevent Fake Move:  Move that dont REALLY change of the partition
+                //                          1. Move to the same group that it comes from.
+                //                          2. Move from single element set to empty set.
+                //                  ->lead to trapped in to local-opt ->lost kl tech advantages
+                //*****************************************************************************
+                if(pi_seq[i][j] == k){
+                    continue;
+                }
+                if(k == total_groups){
+                    bool best_a_is_solo = true;
+                    for(int l = 0; l < number_of_v; l++){
+                        if(pi_seq[i][j] == pi_seq[i][l] && j!=l){
+                             best_a_is_solo = false;
+                        }
+                    }
+                    if(best_a_is_solo){
+                        continue;
+                    }
+                }
+
+
+                new_pi = move(j, k, pi_seq[i]);
+                new_phi = phi(new_pi);
+                new_delta = new_phi - phi_seq[i];
+
+                if(new_delta < min_delta || best_a < 0){
+                    best_a = j;
+                    best_U = k;
+                    min_delta = new_delta;
+                    std::cout<<"a:"<<best_a<<"u:"<<best_U;
+                    plotter.print_to_cout("diff", new_pi, number_of_v, "Better Move Found", min_delta);
+                }
+                free(new_pi);
+            }
+        }
+        if(best_a<0){exit(1);}          //assert(best_a>=0);
+        //-----------Update Parameters of t+1-------------------//
+        pi_seq[i+1] = move(best_a, best_U, pi_seq[i]);
+        delta_seq[i] = min_delta;
+        a[i] = -1;
+        plotter.print_to_cout("diff", pi_seq[i+1], number_of_v, "Best Move", min_delta);
+    }
+
+    //************************************************************
+    //                                        ^
+    //    Select the Maximum-gain Subsequence t
+    //************************************************************
+
+    min_delta = 0;
+    min_pi = pi_seq[0];
+    for(int i = 0; i < number_of_v - 1; i++){
+        delta_seq[i+1] = delta_seq[i+1] + delta_seq[i];
+    }
+    for(int i = 0; i < number_of_v; i++){
+        if(delta_seq[i] < min_delta){
+            min_delta = delta_seq[i];
+            free(min_pi);
+            min_pi = pi_seq[i+1];
+        }else{
+            free(pi_seq[i+1]);              //Free number_of_v times in total
         }
     }
-    return max+1;
+
+    plotter.print_to_cout("float", delta_seq, number_of_v, "Delta_seq", 0);
+    delete[] pi_seq;
+    delete[] delta_seq;
+    delete[] a;
+
+
+    plotter.print_to_cout("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
+    if(min_delta < 0){
+        return kl(min_pi);
+    }else{
+        plotter.print_to_cout("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+        return min_pi;
+    }
+
 }
 
-int Graph::get_edge_id(int start, int end){
-    assert(0 < start <= number_of_v || 0 < end <= number_of_v);
-    //If first vertex(start) has a greater id, swap them.
-    if(start > end){
-        start = start + end;
-        end = start - end;
-        start = start - end;
-    }
-    return (start - 1) * (number_of_v * 2 - start + 2) / 2 + end - start;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

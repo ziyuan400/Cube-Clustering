@@ -29,6 +29,7 @@ public:
 
     float phi(int* pi);
     int* greedy_move(int* pi);
+    int* kl(int* pi);
 
 
     //***************************************

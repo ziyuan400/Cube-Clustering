@@ -13,7 +13,8 @@ int main(int argc, char *argv[])
     graph.input_theta(0);
     graph.input_x(0);
     graph.print('x');
-    graph.greedy_move(graph.pi0());
+    //graph.greedy_move(graph.pi0());
+    graph.kl(graph.pi0());
 
     return a.exec();
 }
