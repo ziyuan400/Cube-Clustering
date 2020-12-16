@@ -1,20 +1,22 @@
 #include "graph.h"
 
-
 //***************************************
 //    Constructor: Allocation only
 //***************************************
 Graph::Graph(int number_of_vertex){
     number_of_v = number_of_vertex;
     number_of_e = number_of_vertex * (number_of_vertex + 1) / 2;
+    number_of_t = number_of_vertex * (number_of_vertex - 1) * (number_of_vertex - 2) / 6;
     x = (float**)malloc (number_of_e * sizeof (float*));
     for(int i = 0; i < number_of_e; i++){
         x[i] = (float*)malloc (number_of_v * sizeof (float));
     }
     c = (float*)malloc (number_of_e * sizeof (float));
+    tri_cost = (float*)malloc (number_of_v * number_of_v * number_of_v * sizeof (float));
+    tri_cost_p = (float*)malloc (number_of_v * number_of_v * number_of_v * sizeof (float));
     theta = (float*)malloc (number_of_v * sizeof (float));
     p = (int*)malloc (number_of_v * sizeof (int));
-    yOfPi = (int*)malloc (number_of_e * sizeof (int));
+    //yOfPi = (int*)malloc (number_of_e * sizeof (int));
 
     plotter = Plotter();
 }
@@ -37,6 +39,17 @@ void Graph::input_theta(float* input_theta){
     }
     for(int i = 0; i < number_of_v; i++){
         theta[i] = random()%100;
+    }
+}
+void Graph::input_c_cp(float *c, float *cp){
+    if(c!=0){
+        tri_cost = c;
+        tri_cost_p = cp;
+        return;
+    }
+    for(int i = 0; i < number_of_v *number_of_v *number_of_v; i++){
+        tri_cost[i] = random()%100;
+        tri_cost_p[i] = random()%100;
     }
 }
 
@@ -62,7 +75,21 @@ void Graph::print(char c){
         plotter.print_to_cout("float", theta, number_of_v, "Parameter THETA", 0);
         break;
     case 'p':
-        plotter.print_to_cout("int", p, number_of_v, "Partation PI", 0);
+        plotter.print_to_cout("int", p, number_of_v *number_of_v *number_of_v, "Partation PI", 0);
+    case 'c':
+        plotter.print_to_cout("float", tri_cost, number_of_t, "c", 0);
+        plotter.print_to_cout("float", tri_cost_p, number_of_t, "c'", 0);
+        int t[3];
+        for (int i = 0; i < number_of_v; i++){
+            for (int j = i+1; j < number_of_v; j++){
+                for (int k = j+1; k < number_of_v; k++){
+                    t[0] = i;t[1] = j;t[2] = k;
+                    std::cout<<get_n_er_relation_id(t, 3)<<" ";
+                }
+
+            }
+        }
+        std::cout<<" \n";
     }
 }
 //************************************************************
@@ -135,10 +162,11 @@ int Graph::num_of_gruops(int* pi){
 //       e |  1, 2, 3, 4, 5
 //      ---|-----------------
 //      1  |  0  1  2  3  4
-//      2  |  5  6  7  8
-//      3  |  9  10 11
-//      4  |  12 13
-//      5  |  14
+//      2  |     5  6  7  8
+//      3  |        9  10 11
+//      4  |           12 13
+//      5  |              14
+//      ISSUE:   (1,1)(2,2) should be invilid....
 //************************************************************
 
 int Graph::get_edge_id(int start, int end){
@@ -152,11 +180,51 @@ int Graph::get_edge_id(int start, int end){
     return (start - 1) * (number_of_v * 2 - start + 2) / 2 + end - start;
 }
 
-//***************************************
+//*****************************************************************************************************
+//      Get posotion of the bivertex/trivertex relation form two nodes
+//      TODO:  extend to ANY-VERTEX relation
+//         |  1                 //         |  2                   //       |  3
+//       T |  1, 2, 3, 4, 5     //       T |  1, 2, 3, 4, 5       //     T |  1, 2, 3, 4, 5
+//      ---|-------------------------------|----------------------//-------|------------------
+//      1  |                    //      1  |                      //    1  |
+//      2  |        1  2  3     //      2  |                      //    2  |
+//      3  |           4  5     //      3  |           7  8       //    3  |
+//      4  |              6     //      4  |              9       //    4  |              10
+//      5  |                    //      5  |                      //    5  |
+//*****************************************************************************************************
+int Graph::get_n_er_relation_id(int* start, int n_er_relation){
+    std::vector<int> v ;            //  Use sortfor vectors.
+    for(int i = 0; i < n_er_relation; i++){
+        v.push_back(start[i]);
+    }
+    std::sort(v.begin(), v.end(), std::less<int>());
+
+    int id = 0;
+
+    //******************************************************************************
+    //    Use ineffecttive and only for cube version (e = |v|3)
+    //    TODO: use compact version(uncomment and verify)
+    //    TODO: id calculation for any n point relation.
+    //******************************************************************************
+
+    if(n_er_relation == 3){
+        int a = v.data()[0]+1, b = v.data()[1]+1 ,c = v.data()[2]+1;
+        assert(a < b && b < c);
+        id += number_of_v * (number_of_v-1) * (number_of_v-2) / 6
+                - (number_of_v+1-a) * (number_of_v-a) * (number_of_v-1-a) / 6;
+        id += (2*number_of_v - a - b) * (b - a - 1) / 2;
+        id += c - b + 1;
+        id += -1;
+    }else if (n_er_relation == 2)
+        id = get_edge_id(v.data()[0], v.data()[1]);
+    return id;
+}
+
+//******************************************************************************
 //    (6, 19)
 //    phi of y = <c, y_of_pi>
 //    c  (a, a') = <phi, x[get_edge_id(a,a')]>
-//***************************************
+//******************************************************************************
 float Graph::phi(int* pi){
     int *y = get_y_from_pi(pi);
     for(int i = 0; i < number_of_e; i++){
@@ -244,6 +312,7 @@ int* Graph::kl(int* pi){
         total_groups = num_of_gruops(pi_seq[i]);
         phi_seq[i] = phi(pi_seq[i]);
         for(int j = 0; j < number_of_v; j++){
+            //skip moved items;
             while(a[j] < 0){
                 j++;
             }
@@ -328,7 +397,147 @@ int* Graph::kl(int* pi){
 
 }
 
+float Graph::cube_phi(int *pi){
+    assert(number_of_v>3);
+    float phi = 0;
+    for(int i = 0; i < number_of_v; i++){
+        for(int j = i+1; j < number_of_v; j++){
+            for(int k = j+1; k < number_of_v; k++){
+                int loc[3] = {i,j,k};
+                if(pi[i] == pi[j] && pi[k] == pi[j]){
+                    phi += tri_cost[get_n_er_relation_id(loc,3)];
+                }else if(pi[i] != pi[j] && pi[j] != pi[k] && pi[k] != pi[i]){
+                    phi += tri_cost_p[get_n_er_relation_id(loc,3)];
+                }
+            }
+        }
+    }
+    return phi;
+}
 
+int* Graph::cube_clustering(){
+    int ttl = 5;
+    pi0();    
+    number_of_e = number_of_v *number_of_v *number_of_v; //Compact version in TODO list;
+
+    float min_delta = -1, new_phi, new_delta,
+            *delta_seq,
+            *phi_seq;
+    int best_phi = 0, best_a = -1, best_U = -1, total_groups = 1;
+    int *min_pi,
+        *new_pi,
+        *a;
+    int **pi_seq;
+
+    delta_seq = (float*)malloc (number_of_v * sizeof (float));
+    phi_seq = (float*)malloc ((number_of_v+1) * sizeof (float));
+    a = (int*)malloc (number_of_v * sizeof (int));
+    pi_seq = (int**)malloc ((number_of_v+1) * sizeof (int*));
+
+    do{
+        best_phi = 0;
+
+        for(int i = 0; i < number_of_v; i++){               //initialize to {1,2,3,4,5}
+            a[i] = i;
+            delta_seq[i] = 0;                                   //initialize to 0 ????
+        }
+        pi_seq[0] = p;
+
+        for(int i = 0; i < number_of_v; i++){
+            //sequence length -nov unmoved items to start
+            //------------The rest initialization will be done until first delta is calculated------//
+            best_a = -1;
+
+            total_groups = num_of_gruops(pi_seq[i]);
+            phi_seq[i] = cube_phi(pi_seq[i]);
+            for(int j = 0; j < number_of_v; j++){
+                //Try to move every items in V
+                while(a[j] < 0){
+                    j++;
+                }
+
+                for(int k = 0; k < number_of_v; k++){
+                    //Try to move to |U|+1 groups
+                    //*****************************************************************************
+                    //    Prevent Fake Move:  Move that dont REALLY change of the partition
+                    //                          1. Move to the same group that it comes from.
+                    //                          2. Move from single element set to empty set.
+                    //                  ->lead to trapped in to local-opt ->lost kl tech advantages
+                    //*****************************************************************************
+                    if(pi_seq[i][j] == k){
+                        continue;
+                    }
+                    if(k == total_groups){
+                        bool best_a_is_solo = true;
+                        for(int l = 0; l < number_of_v; l++){
+                            if(pi_seq[i][j] == pi_seq[i][l] && j!=l){
+                                 best_a_is_solo = false;
+                            }
+                        }
+                        if(best_a_is_solo){
+                            continue;
+                        }
+                    }
+
+                    new_pi = move(j, k, pi_seq[i]);
+                    new_phi = cube_phi(new_pi);
+                    new_delta = new_phi - phi_seq[i];
+
+                    if(new_delta < min_delta || best_a < 0){
+                        best_a = j;
+                        best_U = k;
+                        min_delta = new_delta;
+                        //std::cout<<"a:"<<best_a<<"u:"<<best_U;
+                        plotter.print_to_cout("diff", new_pi, number_of_v, "Better Move Found", min_delta);
+                    }
+                    free(new_pi);
+                }
+            }
+            if(best_a<0){exit(1);}          //assert(best_a>=0);
+            //-----------Update Parameters of t+1-------------------//
+            pi_seq[i+1] = move(best_a, best_U, pi_seq[i]);
+            delta_seq[i] = min_delta;
+            a[i] = -1;
+        }
+
+
+        //************************************************************
+        //                                        ^
+        //    Select the Maximum-gain Subsequence t
+        //************************************************************
+
+        min_delta = 0;
+        min_pi = pi_seq[0];
+        for(int i = 0; i < number_of_v - 1; i++){
+            delta_seq[i+1] = delta_seq[i+1] + delta_seq[i];
+        }
+        for(int i = 0; i < number_of_v; i++){
+            if(delta_seq[i] < min_delta){
+                min_delta = delta_seq[i];
+                min_pi = pi_seq[i+1];
+            }else{
+                free(pi_seq[i+1]);
+            }
+        }
+
+        plotter.print_to_cout("float", delta_seq, number_of_v, "Delta_seq", 0);
+        plotter.print_to_cout("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
+        if(min_delta >= 0){
+            plotter.print_to_cout("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+        }else{
+            free(p);
+            p = min_pi;
+        }
+    }while(min_delta < 0 && ttl--);
+
+
+    free(pi_seq);
+    free(delta_seq);
+    free(phi_seq);
+    free(a);
+
+    return p;
+}
 
 
 

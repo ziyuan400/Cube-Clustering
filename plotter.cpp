@@ -106,6 +106,28 @@ Plotter* Plotter::print_to_cout(std::string d_type, void *pointer, int lenth, st
         }
     }
 
+    //**********************************************
+    //    Print c and c', test order of c if needed
+    //**********************************************
+
+
+    else if(d_type.compare("c") == 0){
+        float **x = (float**)pointer;
+        std::cout << name;
+        std::cout << ": \n";
+
+        for(int i = 0; i < lenth; i++){
+            std::cout <<(i);
+            std::cout <<(" : ");
+            for(int j = 0; j < second_dim -1; j++){
+                std::cout <<(x[i][j]);
+                std::cout <<(" << ");
+            }
+            std::cout <<(x[i][second_dim-1]);
+            std::cout <<("\n");
+        }
+    }
+
 
 
 
