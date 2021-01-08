@@ -16,9 +16,6 @@ Graph::Graph(int number_of_vertex){
     tri_cost_p = (float*)malloc (number_of_v * number_of_v * number_of_v * sizeof (float));
     theta = (float*)malloc (number_of_v * sizeof (float));
     p = (int*)malloc (number_of_v * sizeof (int));
-    //yOfPi = (int*)malloc (number_of_e * sizeof (int));
-
-    plotter = Plotter();
 }
 
 int* Graph::pi0(){
@@ -70,15 +67,15 @@ void Graph::input_x(float** input_x){
 void Graph::print(char c){
     switch(c){
     case 'x':
-        plotter.print_to_cout("float2D", x, number_of_e, "X", number_of_v);
+        plotter.log("float2D", x, number_of_e, "X", number_of_v);
     case 't':
-        plotter.print_to_cout("float", theta, number_of_v, "Parameter THETA", 0);
+        plotter.log("float", theta, number_of_v, "Parameter THETA", 0);
         break;
     case 'p':
-        plotter.print_to_cout("int", p, number_of_v *number_of_v *number_of_v, "Partation PI", 0);
+        plotter.log("int", p, number_of_v *number_of_v *number_of_v, "Partation PI", 0);
     case 'c':
-        plotter.print_to_cout("float", tri_cost, number_of_t, "c", 0);
-        plotter.print_to_cout("float", tri_cost_p, number_of_t, "c'", 0);
+        plotter.log("float", tri_cost, number_of_t, "c", 0);
+        plotter.log("float", tri_cost_p, number_of_t, "c'", 0);
         int t[3];
         for (int i = 0; i < number_of_v; i++){
             for (int j = i+1; j < number_of_v; j++){
@@ -86,10 +83,12 @@ void Graph::print(char c){
                     t[0] = i;t[1] = j;t[2] = k;
                     std::cout<<get_n_er_relation_id(t, 3)<<" ";
                 }
-
             }
         }
-        std::cout<<" \n";
+        std::cout<<" \n"<<std::flush;
+        break;
+    default:
+        plotter.print_to_qtTextField();
     }
 }
 //************************************************************
@@ -263,19 +262,19 @@ int* Graph::greedy_move(int* pi){
                 min_diff = phi_y_pi - new_phi;
             }
 
-            plotter.print_to_cout("diff", new_pi, number_of_v, "", phi_y_pi - new_phi);
+            plotter.log("diff", new_pi, number_of_v, "", phi_y_pi - new_phi);
             free(new_pi);
         }
     }
 
     if(min_diff > 0 && best_U >=0){
         min_pi = move(best_a, best_U, pi);
-        plotter.print_to_cout("diff", min_pi, number_of_v, "MIN_PI TO FIND NEXT MOVE", min_diff);
+        plotter.log("diff", min_pi, number_of_v, "MIN_PI TO FIND NEXT MOVE", min_diff);
         free(pi);
         return greedy_move(min_pi);
     }else{
-
-        plotter.print_to_cout("diff", pi, number_of_v, "FINAL PARTITION", min_diff);
+        plotter.log("diff", pi, number_of_v, "FINAL PARTITION", min_diff);
+        plotter.print_to_cout();
         return pi;
     }
 }
@@ -298,7 +297,7 @@ int* Graph::kl(int* pi){
     }
     pi_seq[0] = pi;
 
-    plotter.print_to_cout("int", pi_seq[0], number_of_v, "PI - Sequence", 0);
+    plotter.log("int", pi_seq[0], number_of_v, "PI - Sequence", 0);
     //*****************************************************************************
     //    Main Loop
     //*****************************************************************************
@@ -347,8 +346,7 @@ int* Graph::kl(int* pi){
                     best_a = j;
                     best_U = k;
                     min_delta = new_delta;
-                    std::cout<<"a:"<<best_a<<"u:"<<best_U;
-                    plotter.print_to_cout("diff", new_pi, number_of_v, "Better Move Found", min_delta);
+                    plotter.log("diff", new_pi, number_of_v, "Better Move Found", min_delta);
                 }
                 free(new_pi);
             }
@@ -358,7 +356,7 @@ int* Graph::kl(int* pi){
         pi_seq[i+1] = move(best_a, best_U, pi_seq[i]);
         delta_seq[i] = min_delta;
         a[i] = -1;
-        plotter.print_to_cout("diff", pi_seq[i+1], number_of_v, "Best Move", min_delta);
+        plotter.log("diff", pi_seq[i+1], number_of_v, "Best Move", min_delta);
     }
 
     //************************************************************
@@ -381,20 +379,20 @@ int* Graph::kl(int* pi){
         }
     }
 
-    plotter.print_to_cout("float", delta_seq, number_of_v, "Delta_seq", 0);
+    plotter.log("float", delta_seq, number_of_v, "Delta_seq", 0);
     delete[] pi_seq;
     delete[] delta_seq;
     delete[] a;
 
 
-    plotter.print_to_cout("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
+    plotter.log("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
     if(min_delta < 0){
         return kl(min_pi);
     }else{
-        plotter.print_to_cout("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+        plotter.log("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+        plotter.print_to_cout();
         return min_pi;
     }
-
 }
 
 float Graph::cube_phi(int *pi){
@@ -488,7 +486,7 @@ int* Graph::cube_clustering(){
                         best_U = k;
                         min_delta = new_delta;
                         //std::cout<<"a:"<<best_a<<"u:"<<best_U;
-                        plotter.print_to_cout("diff", new_pi, number_of_v, "Better Move Found", min_delta);
+                        plotter.log("diff", new_pi, number_of_v, "Better Move Found", min_delta);
                     }
                     free(new_pi);
                 }
@@ -520,10 +518,10 @@ int* Graph::cube_clustering(){
             }
         }
 
-        plotter.print_to_cout("float", delta_seq, number_of_v, "Delta_seq", 0);
-        plotter.print_to_cout("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
+        plotter.log("float", delta_seq, number_of_v, "Delta_seq", 0);
+        plotter.log("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
         if(min_delta >= 0){
-            plotter.print_to_cout("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+            plotter.log("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
         }else{
             free(p);
             p = min_pi;
@@ -535,7 +533,7 @@ int* Graph::cube_clustering(){
     free(delta_seq);
     free(phi_seq);
     free(a);
-
+    plotter.print_to_cout();
     return p;
 }
 

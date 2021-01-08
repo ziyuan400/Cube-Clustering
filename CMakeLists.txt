@@ -21,12 +21,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #        set(ANDROID_EXTRA_LIBS
 #            ${CMAKE_CURRENT_SOURCE_DIR}/path/to/libcrypto.so
 #            ${CMAKE_CURRENT_SOURCE_DIR}/path/to/libssl.so)
-#    endif()
+#    endif()Qt${QT_VERSION_MAJOR}::Datavisualization
 #endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets  REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets  Concurrent DataVisualization REQUIRED )
+add_subdirectory(nlohmann_json)
 if(ANDROID)
   add_library(Cube-Clustering SHARED
     plotter.h
@@ -51,4 +52,10 @@ else()
   )
 endif()
 
-target_link_libraries(Cube-Clustering PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(Cube-Clustering PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Concurrent
+    Qt${QT_VERSION_MAJOR}::DataVisualization
+    nlohmann_json::nlohmann_json
+    )
+

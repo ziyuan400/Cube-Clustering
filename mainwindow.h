@@ -14,7 +14,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void log(std::string str);
 
+    QWidget *get_widget(std::string str);
 private:
     Ui::MainWindow *ui;
 };
