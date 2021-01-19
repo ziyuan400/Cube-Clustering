@@ -1,4 +1,4 @@
-#include "graph.h"
+﻿#include "graph.h"
 
 //***************************************
 //    Constructor: Allocation only
@@ -17,7 +17,12 @@ Graph::Graph(int number_of_vertex){
     theta = (float*)malloc (number_of_v * sizeof (float));
     p = (int*)malloc (number_of_v * sizeof (int));
 }
+Graph::~Graph(){
 
+    //******************************************************************************
+    //    TODO: free memory.
+    //******************************************************************************
+}
 int* Graph::pi0(){
     for(int i = 0; i < number_of_v; i++){
         p[i] = 0;
@@ -36,6 +41,15 @@ void Graph::input_theta(float* input_theta){
     }
     for(int i = 0; i < number_of_v; i++){
         theta[i] = random()%100;
+    }
+}
+void Graph::input_points(float* points){
+    if(points!=0){
+        point_location = points;
+        return;
+    }
+    for(int i = 0; i < number_of_v*3; i++){
+        point_location[i] = random()%100;
     }
 }
 void Graph::input_c_cp(float *c, float *cp){
@@ -395,6 +409,20 @@ int* Graph::kl(int* pi){
     }
 }
 
+float Graph::cost_generator(float *p1, float *p2, float *p3){
+    float x_bar = (p1[0] + p2[0] + p3[0]) /3;
+    float y_bar = (p1[1] + p2[1] + p3[1]) /3;
+    float z_bar = (p1[2] + p2[2] + p3[2]) /3;
+    if(-0.001 < x_bar < 0.001){
+        x_bar = 0.001;
+    }
+    float a = (y_bar + z_bar)/x_bar;
+    float d = abs(a * p1[0] + p1[1] + p1[2]) +
+            abs(a * p2[0] + p2[1] + p2[2]) +
+            abs(a * p3[0] + p3[1] + p3[2]) /sqrt(a*a+1+1);
+    return d;
+}
+
 float Graph::cube_phi(int *pi){
     assert(number_of_v>3);
     float phi = 0;
@@ -413,9 +441,43 @@ float Graph::cube_phi(int *pi){
     return phi;
 }
 
+float Graph::cube_phi_d(int *pi){
+    assert(number_of_v>3);
+    float phi = 0;
+    for(int i = 0; i < number_of_v; i++){
+        for(int j = i+1; j < number_of_v; j++){
+            for(int k = j+1; k < number_of_v; k++){
+                if(pi[i] == pi[j] && pi[k] == pi[j]){
+                    phi += cost_generator(point_location+i*3,point_location+j*3,point_location+k*3);
+                }
+            }
+        }
+    }
+    return phi;
+}
+float Graph::cube_phi_test(int *pi){
+    assert(number_of_v>3);
+    float phi = 0;
+    for(int i = 0; i < number_of_v; i++){
+        for(int j = i+1; j < number_of_v; j++){
+            for(int k = j+1; k < number_of_v; k++){
+                std::cout<<"i: "<<i
+                         <<"  j: "<<j
+                         <<"  k: "<<k
+                         <<"  cost: "
+                         <<cost_generator(point_location+i*3,point_location+j*3,point_location+k*3)
+                         <<"\n";
+
+            }
+        }
+    }
+    return phi;
+}
+
+
 int* Graph::cube_clustering(){
     int ttl = 5;
-    pi0();    
+    pi0();
     number_of_e = number_of_v *number_of_v *number_of_v; //Compact version in TODO list;
 
     float min_delta = -1, new_phi, new_delta,
@@ -534,6 +596,141 @@ int* Graph::cube_clustering(){
     free(phi_seq);
     free(a);
     plotter.print_to_cout();
+    return p;
+}
+
+
+
+
+
+
+int* Graph::cube_clustering_d(){
+    plotter.log("float", point_location, number_of_v*3, "Point-Location", 0);
+    int ttl = 100;
+    //TODO: remove hard coding group number
+    int groups = 4;
+    pi0();
+    number_of_e = number_of_v *number_of_v *number_of_v; //Compact version in TODO list;
+
+    float min_delta = -1, new_phi, new_delta,
+            *delta_seq,
+            *phi_seq;
+    int best_phi = 0, best_a = -1, best_U = -1, total_groups = 1;
+    int *min_pi,
+        *new_pi,
+        *a;
+    int **pi_seq;
+
+    delta_seq = (float*)malloc (number_of_v * sizeof (float));
+    phi_seq = (float*)malloc ((number_of_v+1) * sizeof (float));
+    a = (int*)malloc (number_of_v * sizeof (int));
+    pi_seq = (int**)malloc ((number_of_v+1) * sizeof (int*));
+
+    do{
+        best_phi = 0;
+
+        for(int i = 0; i < number_of_v; i++){               //initialize to {1,2,3,4,5}
+            a[i] = i;
+            delta_seq[i] = 0;                                   //initialize to 0 ????
+        }
+        pi_seq[0] = p;
+
+        for(int i = 0; i < number_of_v; i++){
+            //sequence length -nov unmoved items to start
+            //------------The rest initialization will be done until first delta is calculated------//
+            best_a = -1;
+
+            total_groups = num_of_gruops(pi_seq[i]);
+            phi_seq[i] = cube_phi_d(pi_seq[i]);
+            for(int j = 0; j < number_of_v; j++){
+                //Try to move every items in V
+                while(a[j] < 0){
+                    j++;
+                }
+
+                for(int k = 0; k < number_of_v; k++){
+                    //Try to move to |U|+1 groups
+                    //*****************************************************************************
+                    //    Prevent Fake Move:  Move that dont REALLY change of the partition
+                    //                          1. Move to the same group that it comes from.
+                    //                          2. Move from single element set to empty set.
+                    //                  ->lead to trapped in to local-opt ->lost kl tech advantages
+                    //*****************************************************************************
+                    if(pi_seq[i][j] == k){
+                        continue;
+                    }
+                    if(k == total_groups){
+                        bool best_a_is_solo = true;
+                        for(int l = 0; l < number_of_v; l++){
+                            if(pi_seq[i][j] == pi_seq[i][l] && j!=l){
+                                 best_a_is_solo = false;
+                            }
+                        }
+                        if(best_a_is_solo){
+                            continue;
+                        }
+                    }
+
+                    new_pi = move(j, k, pi_seq[i]);
+                    new_phi = cube_phi_d(new_pi);
+                    new_delta = new_phi - phi_seq[i];
+
+                    if((new_delta < min_delta && num_of_gruops(new_pi)<=groups) || best_a < 0){
+                        best_a = j;
+                        best_U = k;
+                        min_delta = new_delta;
+                        plotter.log("diff", new_pi, number_of_v, "Better Move Found", min_delta);
+                    }
+                    free(new_pi);
+                }
+            }
+            if(best_a<0){exit(1);}          //assert(best_a>=0);
+            //-----------Update Parameters of t+1-------------------//
+            pi_seq[i+1] = move(best_a, best_U, pi_seq[i]);
+            delta_seq[i] = min_delta;
+            a[i] = -1;
+        }
+
+
+        //************************************************************
+        //                                        ^
+        //    Select the Maximum-gain Subsequence t
+        //************************************************************
+
+        min_delta = 0;
+        min_pi = pi_seq[0];
+        for(int i = 0; i < number_of_v - 1; i++){
+            delta_seq[i+1] = delta_seq[i+1] + delta_seq[i];
+        }
+        for(int i = 0; i < number_of_v; i++){
+            if(delta_seq[i] < min_delta){
+                min_delta = delta_seq[i];
+                min_pi = pi_seq[i+1];
+            }else{
+                free(pi_seq[i+1]);
+            }
+        }
+
+        plotter.log("float", delta_seq, number_of_v, "Delta_seq", 0);
+        plotter.log("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
+        if(min_delta >= 0){
+            plotter.log("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+        }else{
+            free(p);
+            p = min_pi;
+        }
+    }while(min_delta < 0 && ttl--);
+
+
+    free(pi_seq);
+    free(delta_seq);
+    free(phi_seq);
+    free(a);
+    plotter.print_to_cout();
+
+    plotter.log("points", point_location, 20, "", 0);
+    plotter.log("pi", p, 20, "", 0);
+    plotter.print_to_qtTextField();
     return p;
 }
 

@@ -7,8 +7,7 @@ Plotter::Plotter()
     str = "";
     json_log = R"(
       {
-        "happy": true,
-        "pi": 3.141
+        "point_number": 20
       }
     )"_json;
 }
@@ -169,6 +168,26 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
     }
 
 
+    //**********************************************
+    //    Print points using scatter
+    //**********************************************
+
+    else if(d_type.compare("points") == 0){
+        float *x = (float*)pointer;
+        for(int i = 0; i < lenth; i++){
+            json_log["position"][i][0]=x[i*3];
+            json_log["position"][i][1]=x[i*3+1];
+            json_log["position"][i][2]=x[i*3+2];
+        }
+    }
+    else if(d_type.compare("pi") == 0){
+        int *x = (int*)pointer;
+        for(int i = 0; i < lenth; i++){
+            json_log["pi"][i]=x[i];
+        }
+    }
+
+
 
 
     //***************************************
@@ -203,10 +222,10 @@ Plotter* Plotter::print_to_qtTextField(){
     int argc = 1;
     char *argv[1] = {};
     QApplication a(argc, argv);
-    w = new MainWindow;
-    w->log(str);
+    //w = new MainWindow;
+    //w->log(str);
     scatter_main(new QWidget());
-    w->show();
+    //w->show();
     a.exec();
     str = "";
     return this;
@@ -215,54 +234,89 @@ Plotter* Plotter::print_to_qtTextField(){
 void ScatterDataModifier::addData(json json)
 {
     // Configure the axes according to the data
-
+    int number_of_points = json["point_number"];
+    int planes = 4;
+    int dots = number_of_points / planes;
     QScatterDataArray *dataArray = new QScatterDataArray;
-    dataArray->resize(json["point_number"]);
+    QScatterDataArray *dataArray2 = new QScatterDataArray;
+    QScatterDataArray *dataArray3 = new QScatterDataArray;
+    QScatterDataArray *dataArray4 = new QScatterDataArray;
+    QScatterDataArray *dataArray5 = new QScatterDataArray;
+    QScatterDataArray *dataArray6 = new QScatterDataArray;
+    QScatterDataArray *dataArray7 = new QScatterDataArray;
+    QScatterDataArray *dataArray8 = new QScatterDataArray;
+    dataArray->resize(dots);
+    dataArray2->resize(dots);
+    dataArray3->resize(dots);
+    dataArray4->resize(dots);
+    dataArray5->resize(number_of_points);
+    dataArray6->resize(number_of_points);
+    dataArray7->resize(number_of_points);
+    dataArray8->resize(number_of_points);
     QScatterDataItem *ptrToDataArray = &dataArray->first();
     for(int i = 0; i < json["point_number"]; i++){
         ptrToDataArray->setPosition(QVector3D(json["position"][i][0],
                                               json["position"][i][1],
                                               json["position"][i][2]));
+        ptrToDataArray++;
+        if (i == 4){
+            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray);
+            ptrToDataArray = &dataArray2->first();
+        }
+        if (i == 9){
+            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray2);
+            m_graph->seriesList().at(i/5)->setBaseColor(Qt::green);
+            ptrToDataArray = &dataArray3->first();
+        }
+        if (i == 14){
+            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray3);
+            m_graph->seriesList().at(i/5)->setBaseColor(Qt::red);
+            ptrToDataArray = &dataArray4->first();
+        }
+        if (i == 19){
+            m_graph->seriesList().at(i/dots)->dataProxy()->resetArray(dataArray4);
+            m_graph->seriesList().at(i/dots)->setBaseColor(Qt::blue);
+        }
+    }
+    QScatterDataItem *ptrToPartition1 = &dataArray5->first();
+    QScatterDataItem *ptrToPartition2 = &dataArray6->first();
+    QScatterDataItem *ptrToPartition3 = &dataArray7->first();
+    QScatterDataItem *ptrToPartition4 = &dataArray8->first();
+    for(int i = 0; i < json["point_number"]; i++){
+        if (json["pi"][i] == 0){
+            ptrToPartition1->setPosition(QVector3D(json["position"][i][0],
+                    json["position"][i][1],
+                    json["position"][i][2]));
+            ptrToPartition1++;
+        }
+        if (json["pi"][i] == 1){
+            ptrToPartition2->setPosition(QVector3D(json["position"][i][0],
+                    json["position"][i][1],
+                    json["position"][i][2]));
+            ptrToPartition2++;
+        }
+        if (json["pi"][i] == 2){
+            ptrToPartition3->setPosition(QVector3D(json["position"][i][0],
+                    json["position"][i][1],
+                    json["position"][i][2]));
+            ptrToPartition3++;
+        }
+        if (json["pi"][i] == 3){
+            ptrToPartition4->setPosition(QVector3D(json["position"][i][0],
+                    json["position"][i][1],
+                    json["position"][i][2]));
+            ptrToPartition4++;
+        }
     }
 
-
-    m_graph->seriesList().at(0)->dataProxy()->resetArray(dataArray);
+    m_graph->seriesList().at(0+planes)->dataProxy()->resetArray(dataArray5);
+    m_graph->seriesList().at(1+planes)->dataProxy()->resetArray(dataArray6);
+    m_graph->seriesList().at(1+planes)->setBaseColor(Qt::green);
+    m_graph->seriesList().at(2+planes)->dataProxy()->resetArray(dataArray7);
+    m_graph->seriesList().at(2+planes)->setBaseColor(Qt::red);
+    m_graph->seriesList().at(3+planes)->dataProxy()->resetArray(dataArray8);
+    m_graph->seriesList().at(3+planes)->setBaseColor(Qt::blue);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -270,12 +324,12 @@ void ScatterDataModifier::addData(json json)
 
 //**********************************************************************************************
 //   TODO:  Refactor the hard-copy code into a new folder
-//      These code are copyed from a Qt Example project
+//      These code are copyed from a Qt Example project  Copyright (C) 2016 The Qt Company Ltd. Contact: https://www.qt.io/licensing/
 //**********************************************************************************************
 
 
 
-int scatter_main(QWidget * widget)
+int Plotter::scatter_main(QWidget * widget)
 {
     //! [0]QApplication app(argc, argv);
     Q3DScatter *graph = new Q3DScatter();
@@ -421,7 +475,8 @@ int scatter_main(QWidget * widget)
     //! [6]
 
     //! [3]
-    //widget->show();
+    modifier->addData(json_log);
+    widget->show();
     return 0;
     //! [3] app.exec();
 }
@@ -453,7 +508,27 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
     QScatter3DSeries *series = new QScatter3DSeries(proxy);
     series->setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
     series->setMeshSmooth(m_smooth);
+    QScatterDataProxy *proxy2 = new QScatterDataProxy;
+    QScatter3DSeries *series2 = new QScatter3DSeries(proxy2);
+    series->setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
+    series->setMeshSmooth(m_smooth);
+    QScatterDataProxy *proxy3 = new QScatterDataProxy;
+    QScatter3DSeries *series3 = new QScatter3DSeries(proxy3);
+    series->setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
+    series->setMeshSmooth(m_smooth);
+    QScatterDataProxy *proxy4 = new QScatterDataProxy;
+    QScatter3DSeries *series4 = new QScatter3DSeries(proxy4);
+    series->setItemLabelFormat(QStringLiteral("@xTitle: @xLabel @yTitle: @yLabel @zTitle: @zLabel"));
+    series->setMeshSmooth(m_smooth);
     m_graph->addSeries(series);
+    m_graph->addSeries(series2);
+    m_graph->addSeries(series3);
+    m_graph->addSeries(series4);
+    m_graph->addSeries(new QScatter3DSeries(new QScatterDataProxy));
+    m_graph->addSeries(new QScatter3DSeries(new QScatterDataProxy));
+    m_graph->addSeries(new QScatter3DSeries(new QScatterDataProxy));
+    m_graph->addSeries(new QScatter3DSeries(new QScatterDataProxy));
+
     //! [2]
 
     //! [3]
@@ -583,12 +658,26 @@ void ScatterDataModifier::toggleItemCount()
     if (m_itemCount == numberOfItems) {
         m_itemCount = lowerNumberOfItems;
         m_curveDivider = lowerCurveDivider;
+        m_graph->seriesList().at(0)->setVisible(true);
+        m_graph->seriesList().at(1)->setVisible(true);
+        m_graph->seriesList().at(2)->setVisible(true);
+        m_graph->seriesList().at(3)->setVisible(true);
+        m_graph->seriesList().at(4)->setVisible(false);
+        m_graph->seriesList().at(5)->setVisible(false);
+        m_graph->seriesList().at(6)->setVisible(false);
+        m_graph->seriesList().at(7)->setVisible(false);
     } else {
         m_itemCount = numberOfItems;
         m_curveDivider = curveDivider;
+        m_graph->seriesList().at(0)->setVisible(false);
+        m_graph->seriesList().at(1)->setVisible(false);
+        m_graph->seriesList().at(2)->setVisible(false);
+        m_graph->seriesList().at(3)->setVisible(false);
+        m_graph->seriesList().at(4)->setVisible(true);
+        m_graph->seriesList().at(5)->setVisible(true);
+        m_graph->seriesList().at(6)->setVisible(true);
+        m_graph->seriesList().at(7)->setVisible(true);
     }
-    m_graph->seriesList().at(0)->dataProxy()->resetArray(0);
-    addData();
 }
 
 QVector3D ScatterDataModifier::randVector()

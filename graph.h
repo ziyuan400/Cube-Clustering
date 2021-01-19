@@ -11,12 +11,13 @@ class Graph{
 private:
     int number_of_v, number_of_e = 0,   // number_of_v = |V|, number_of_e = |S|
         number_of_t = 0;                // number_of_t : number of all trangle relations;
-    int     *p;                         //[number_of_v] The array of group id of each vertex for PERTITIONS => {0,0,1,1,1} means {{1,2},{3,4,5}}
-            //*yOfPi;                   //[number_of_e] S=>{0,1}, 1 if both v belong to the same U.
+    int     *p,                         //[number_of_v] The array of group id of each vertex for PERTITIONS => {0,0,1,1,1} means {{1,2},{3,4,5}}
+            *yOfPi;                     //[number_of_e] S=>{0,1}, 1 if both v belong to the same U.
     float   *c,                         //[number_of_e] set of COST of all edges
             *theta,                     //[number_of_v] attributes on each vertex;
             **x,                        //[number_of_e][number_of_v] attribute vector of every pair(a, a')
-            *tri_cost, *tri_cost_p;     //[number_of_t] T
+            *tri_cost, *tri_cost_p,     //[number_of_t] T
+            *point_location;            //[number_of_v * 3]
     Plotter plotter;
 
 public:
@@ -24,10 +25,12 @@ public:
     //    Initialization and I/O
     //***************************************
     Graph(int number_of_v);
+    ~Graph();
     int* pi0();
     void input_x(float** input_x);
     void input_c_cp(float* c, float* cp);
     void input_theta(float* input_theta);
+    void input_points(float* points);
 
     //***************************************
     //    Computations
@@ -38,7 +41,7 @@ public:
     int* greedy_move(int* pi);
     int* kl(int* pi);
     int* cube_clustering();
-
+    float cost_generator(float *p1, float *p2, float *p3);
 
     //***************************************
     //    Tools
@@ -55,6 +58,9 @@ public:
     //***************************************
     float* compute_p_of_Y(float* x);
     float* normal_distribution(float* theta, float rou);
+    int *cube_clustering_d();
+    float cube_phi_d(int *pi);
+    float cube_phi_test(int *pi);
 };
 
 

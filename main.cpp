@@ -8,24 +8,26 @@
 void greedy_move();
 void greedy_move_with_kl_technic();
 void cubic_clustering();
-void data_generator(double *p, int planes, int points);
+void data_generator(float *p, int planes, int points);
+double cost_generator(float *p);
 
 int main()
 {
-    double *p = new double[60];
+    float *p = new float[60];
     data_generator(p, 4, 5);
     Graph graph = Graph(20);
-    graph.input_c_cp(0,0);
-    graph.cube_clustering();
+    graph.input_points(p);
+    //graph.cube_phi_test(graph.pi0());
+    graph.cube_clustering_d();
 }
 
 
 
-void data_generator(double *p, int planes, int points){
-    double phi, costheta, theta, r, x, y, z;
-    double x1, y1, z1;
-    double x2, y2, z2;
-    double a,b;
+void data_generator(float *p, int planes, int points){
+    float phi, costheta, theta, r, x, y, z;
+    float x1, y1, z1;
+    float x2, y2, z2;
+    float a,b;
 
     for(int i = 0; i < planes; i++){
         phi = rand() * 1.0 / RAND_MAX * M_PI;                 //random(0, 2*pi)
@@ -66,6 +68,22 @@ void data_generator(double *p, int planes, int points){
     }
 
 
+}
+
+
+double cost_generator(double *p){
+    double x_bar = (p[0] + p[3] + p[6]) /3;
+    double y_bar = (p[1] + p[4] + p[7]) /3;
+    double z_bar = (p[2] + p[5] + p[8]) /3;
+    if(-0.001 < x_bar < 0.001){
+        x_bar = 0.001;
+    }
+    double a = (y_bar + z_bar)/x_bar;
+    double d = abs(a * p[0] + p[1] + p[2]) +
+            abs(a * p[3] + p[4] + p[5]) +
+            abs(a * p[6] + p[7] + p[8]) /sqrt(a*a+1+1);
+
+    return d;
 }
 
 

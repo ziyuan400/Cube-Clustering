@@ -82,6 +82,7 @@ public:
     Plotter* log(std::string d_type, void *pointer, int lenth, std::string name, float diff);
     Plotter* log(std::string d_type, void *pointer, int lenth, std::string name, int second_dim);
 
+    int scatter_main(QWidget *widget);
 };
 
 #endif // PLOTTER_H
