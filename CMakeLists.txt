@@ -27,7 +27,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets  REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets  Concurrent DataVisualization REQUIRED )
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+
 add_subdirectory(nlohmann_json)
+add_subdirectory(eigen-3.3.9)
+
 if(ANDROID)
   add_library(Cube-Clustering SHARED
     plotter.h
@@ -35,8 +39,8 @@ if(ANDROID)
     graph.cpp
     graph.h
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
+    #mainwindow.cpp
+    #mainwindow.h
     mainwindow.ui
   )
 else()
@@ -46,8 +50,8 @@ else()
     graph.cpp
     graph.h
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
+    #mainwindow.cpp
+    #mainwindow.h
     mainwindow.ui
   )
 endif()
@@ -57,5 +61,6 @@ target_link_libraries(Cube-Clustering PRIVATE
     Qt${QT_VERSION_MAJOR}::Concurrent
     Qt${QT_VERSION_MAJOR}::DataVisualization
     nlohmann_json::nlohmann_json
+    Eigen3::Eigen
     )
 

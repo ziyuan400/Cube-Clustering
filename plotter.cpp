@@ -4,10 +4,12 @@ int scatter_main(QWidget * widget);
 
 Plotter::Plotter()
 {
+    ENABLE_TEACE = false;
     str = "";
     json_log = R"(
       {
-        "point_number": 20
+        "point_number": 4,
+        "number_of_planes": 4
       }
     )"_json;
 }
@@ -19,10 +21,11 @@ Plotter::Plotter()
 //
 // {
 //  graph:{
-//      point_number: int
-//      position:[n][x,y,z]
-//      cost:[combination(n,3)]
-//      cost':[combination(n,3)]
+//      "point_number": int,
+//      "number_of_planes": 4
+//      "position":[n][x,y,z],
+//      "cost":[combination(n,3)],
+//      "cost'":[combination(n,3)]
 //  }
 //  clustering process:{
 //      round-1:{
@@ -41,20 +44,26 @@ Plotter::Plotter()
 //    }
 // }
 //******************************************************************************
-
+Plotter* Plotter::enable(){
+    ENABLE_TEACE = true;
+    return this;
+}
+Plotter* Plotter::disable(){
+    ENABLE_TEACE = false;
+    return this;
+}
 Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string name, float diff){
-    if(name.compare("")!=0){
+    if(name.compare("")!=0 && ENABLE_TEACE){
         str += "**************************";
         str += name;
         str += "**************************\n";
-        json_log[""] = name;
     }
 
     //******************************************************************************
     //    Print Pi and the diffrence between phi(Pi) and a given min value
     //******************************************************************************
 
-    if(d_type.compare("diff") == 0){
+    if(d_type.compare("diff") == 0 && ENABLE_TEACE){
 
         str += "After Move: ";
         int *pi = (int*)pointer;
@@ -67,29 +76,37 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
         str += "} Diffrence ---->" ;
         str += std::to_string(diff);
 
-        if(name.compare("Best Move Of The Sequence") == 0){}
-        if(name.compare("Better Move Found") == 0){}
+        if(name.compare("Best Move Of The Sequence") == 0){
+            std::cout<<str<<std::flush;
+            str = "";
+        }
+        if(name.compare("Better Move Found") == 0){
+
+            std::cout<<str<<std::flush;
+            str = "";
+        }
         if(name.compare("Final Selected Partition") == 0){}
     }
 
     //***************************************
     //   Default
     //***************************************
-    else{
+    else if(ENABLE_TEACE){
         str += "diff Print UNSUCCESSFUL: print option ";
         str += name;
         str += "not found\n";
     }
-    str += ("\n");
-
-    if(name.compare("")!=0){
-        str += "\n\n " ;
+    if(ENABLE_TEACE){
+        str += ("\n");
+        if(name.compare("")!=0 && ENABLE_TEACE){
+            str += "\n" ;
+        }
     }
     return this;
 }
 
 Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string name, int second_dim){
-    if(name.compare("")!=0){                                            //Seprater if needed
+    if(name.compare("")!=0 && ENABLE_TEACE){                                            //Seprater if needed
         str += "**************************";
         str += name;
         str += "**************************\n";
@@ -97,7 +114,7 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
     //***************************************
     //    Print A Set Of Int Array
     //***************************************
-    if(d_type.compare("int") == 0){
+    if(d_type.compare("int") == 0 && ENABLE_TEACE){
         int* p = (int*)pointer;
         str += name;
         str += ": \n{";
@@ -106,14 +123,15 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
             str += ", " ;
         }
         str += std::to_string(p[lenth-1]);
-        str += "}" ;
+        str += "}" ;        
+        str += ("\n");
     }
 
     //***************************************
     //    Print A Set Of Float Array
     //***************************************
 
-    else if(d_type.compare("float") == 0){
+    else if(d_type.compare("float") == 0 && ENABLE_TEACE){
         float *theta = (float*)pointer;
         str += name;
         str += ": \n";
@@ -121,14 +139,15 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
             str += std::to_string(theta[i]);
             str += " << " ;
         }
-        str += std::to_string(theta[lenth-1]);
+        str += std::to_string(theta[lenth-1]);        
+        str += ("\n");
     }
 
     //***************************************
     //    Print A 2D Float Array for x
     //***************************************
 
-    else if(d_type.compare("float2D") == 0){
+    else if(d_type.compare("float2D") == 0 && ENABLE_TEACE){
         float **x = (float**)pointer;
         str += name;
         str += ": \n";
@@ -150,7 +169,7 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
     //**********************************************
 
 
-    else if(d_type.compare("c") == 0){
+    else if(d_type.compare("c") == 0 && ENABLE_TEACE){
         float **x = (float**)pointer;
         str += name;
         str += ": \n";
@@ -167,12 +186,12 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
         }
     }
 
-
     //**********************************************
     //    Print points using scatter
     //**********************************************
 
     else if(d_type.compare("points") == 0){
+        json_log["point_number"] = lenth;
         float *x = (float*)pointer;
         for(int i = 0; i < lenth; i++){
             json_log["position"][i][0]=x[i*3];
@@ -186,19 +205,21 @@ Plotter* Plotter::log(std::string d_type, void *pointer, int lenth, std::string 
             json_log["pi"][i]=x[i];
         }
     }
-
-
-
+    else if(name.compare("gt") == 0){
+        int *x = (int*)pointer;
+        for(int i = 0; i < lenth; i++){
+            json_log["gt"][i]=x[i];
+        }
+    }
 
     //***************************************
     //   Default
     //***************************************
-    else{
+    else if(ENABLE_TEACE){
         str += "Print UNSUCCESSFUL: print option ";
         str += name;
         str += "not found\n";
     }
-    str += ("\n");
 
     return this;
 }
@@ -222,100 +243,101 @@ Plotter* Plotter::print_to_qtTextField(){
     int argc = 1;
     char *argv[1] = {};
     QApplication a(argc, argv);
-    //w = new MainWindow;
-    //w->log(str);
     scatter_main(new QWidget());
-    //w->show();
     a.exec();
-    str = "";
     return this;
 }
 
 void ScatterDataModifier::addData(json json)
 {
     // Configure the axes according to the data
-    int number_of_points = json["point_number"];
-    int planes = 4;
-    int dots = number_of_points / planes;
-    QScatterDataArray *dataArray = new QScatterDataArray;
-    QScatterDataArray *dataArray2 = new QScatterDataArray;
-    QScatterDataArray *dataArray3 = new QScatterDataArray;
-    QScatterDataArray *dataArray4 = new QScatterDataArray;
-    QScatterDataArray *dataArray5 = new QScatterDataArray;
-    QScatterDataArray *dataArray6 = new QScatterDataArray;
-    QScatterDataArray *dataArray7 = new QScatterDataArray;
-    QScatterDataArray *dataArray8 = new QScatterDataArray;
-    dataArray->resize(dots);
-    dataArray2->resize(dots);
-    dataArray3->resize(dots);
-    dataArray4->resize(dots);
-    dataArray5->resize(number_of_points);
-    dataArray6->resize(number_of_points);
-    dataArray7->resize(number_of_points);
-    dataArray8->resize(number_of_points);
-    QScatterDataItem *ptrToDataArray = &dataArray->first();
-    for(int i = 0; i < json["point_number"]; i++){
-        ptrToDataArray->setPosition(QVector3D(json["position"][i][0],
-                                              json["position"][i][1],
-                                              json["position"][i][2]));
-        ptrToDataArray++;
-        if (i == 4){
-            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray);
-            ptrToDataArray = &dataArray2->first();
+    int POINTS = json["point_number"];
+    int PLANES = json["number_of_planes"];
+    int dots = POINTS / PLANES;
+    std::vector<Qt::GlobalColor> color(20);
+    //TODO: Add color list for more planes;
+    color[0] = Qt::white;
+    color[1] = Qt::green;
+    color[2] = Qt::red;
+    color[3] = Qt::blue;
+
+
+//**********************************************************************************************
+//   Add Ground Truth Data
+//**********************************************************************************************
+
+    if(json.contains("gt")){
+        std::vector<QScatterDataArray*> gtResult(PLANES);
+        std::vector<QScatterDataItem*> ptrToGroundTruth(PLANES);
+        std::vector<int> count(PLANES);
+        for (int i = 0; i<PLANES; i++){
+            gtResult[i] = new QScatterDataArray;
+            gtResult[i]->resize(POINTS);
+            ptrToGroundTruth[i] = &gtResult[i]->first();
         }
-        if (i == 9){
-            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray2);
-            m_graph->seriesList().at(i/5)->setBaseColor(Qt::green);
-            ptrToDataArray = &dataArray3->first();
+        for(int i = 0; i < POINTS; i++){
+
+            ptrToGroundTruth[json["gt"][i]]->setPosition(
+                        QVector3D(json["position"][i][0],
+                                  json["position"][i][1],
+                                  json["position"][i][2]));
+            ptrToGroundTruth[json["gt"][i]]++;
+            count[json["gt"][i]]++;
         }
-        if (i == 14){
-            m_graph->seriesList().at(i/5)->dataProxy()->resetArray(dataArray3);
-            m_graph->seriesList().at(i/5)->setBaseColor(Qt::red);
-            ptrToDataArray = &dataArray4->first();
+        for (int i = 0; i<PLANES; i++){
+            gtResult[i] -> resize(count[i]);
+            m_graph->seriesList().at(i)->dataProxy()->resetArray(gtResult[i]);
+            m_graph->seriesList().at(i)->setBaseColor(color[i]);
         }
-        if (i == 19){
-            m_graph->seriesList().at(i/dots)->dataProxy()->resetArray(dataArray4);
-            m_graph->seriesList().at(i/dots)->setBaseColor(Qt::blue);
-        }
-    }
-    QScatterDataItem *ptrToPartition1 = &dataArray5->first();
-    QScatterDataItem *ptrToPartition2 = &dataArray6->first();
-    QScatterDataItem *ptrToPartition3 = &dataArray7->first();
-    QScatterDataItem *ptrToPartition4 = &dataArray8->first();
-    for(int i = 0; i < json["point_number"]; i++){
-        if (json["pi"][i] == 0){
-            ptrToPartition1->setPosition(QVector3D(json["position"][i][0],
-                    json["position"][i][1],
-                    json["position"][i][2]));
-            ptrToPartition1++;
-        }
-        if (json["pi"][i] == 1){
-            ptrToPartition2->setPosition(QVector3D(json["position"][i][0],
-                    json["position"][i][1],
-                    json["position"][i][2]));
-            ptrToPartition2++;
-        }
-        if (json["pi"][i] == 2){
-            ptrToPartition3->setPosition(QVector3D(json["position"][i][0],
-                    json["position"][i][1],
-                    json["position"][i][2]));
-            ptrToPartition3++;
-        }
-        if (json["pi"][i] == 3){
-            ptrToPartition4->setPosition(QVector3D(json["position"][i][0],
-                    json["position"][i][1],
-                    json["position"][i][2]));
-            ptrToPartition4++;
+    }else{
+        QScatterDataArray *dataArray;
+        QScatterDataItem *ptrToDataArray;
+        for(int i = 0; i < POINTS; i++){
+            if (i % dots == 0){
+                dataArray = new QScatterDataArray;
+                dataArray->resize(dots);
+                m_graph->seriesList().at(i/dots)->dataProxy()->resetArray(dataArray);
+                m_graph->seriesList().at(i/dots)->setBaseColor(color[i/dots]);
+                ptrToDataArray = &dataArray->first();
+            }
+            ptrToDataArray->setPosition(QVector3D(json["position"][i][0],
+                                                  json["position"][i][1],
+                                                  json["position"][i][2]));
+            ptrToDataArray++;
         }
     }
 
-    m_graph->seriesList().at(0+planes)->dataProxy()->resetArray(dataArray5);
-    m_graph->seriesList().at(1+planes)->dataProxy()->resetArray(dataArray6);
-    m_graph->seriesList().at(1+planes)->setBaseColor(Qt::green);
-    m_graph->seriesList().at(2+planes)->dataProxy()->resetArray(dataArray7);
-    m_graph->seriesList().at(2+planes)->setBaseColor(Qt::red);
-    m_graph->seriesList().at(3+planes)->dataProxy()->resetArray(dataArray8);
-    m_graph->seriesList().at(3+planes)->setBaseColor(Qt::blue);
+
+
+
+//**********************************************************************************************
+//   Add Data from json["position"] and color from json["pi"]
+//**********************************************************************************************
+    std::vector<QScatterDataArray*> dataArrayResult(PLANES);
+    std::vector<QScatterDataItem*> ptrToPartition(PLANES);
+    std::vector<int> count(PLANES);
+    for (int i = 0; i<PLANES; i++){
+        dataArrayResult[i] = new QScatterDataArray;
+        dataArrayResult[i]->resize(POINTS);
+        ptrToPartition[i] = &dataArrayResult[i]->first();
+    }
+    for(int i = 0; i < POINTS; i++){
+
+        ptrToPartition[json["pi"][i]]->setPosition(
+                    QVector3D(json["position"][i][0],
+                              json["position"][i][1],
+                              json["position"][i][2]));
+        ptrToPartition[json["pi"][i]]++;
+        count[json["pi"][i]]++;
+    }
+    for (int i = 0; i<PLANES; i++){
+        dataArrayResult[i] -> resize(count[i]);
+        m_graph->seriesList().at(i+PLANES)->dataProxy()->resetArray(dataArrayResult[i]);
+        m_graph->seriesList().at(i+PLANES)->setBaseColor(color[i]);
+        m_graph->seriesList().at(i)->setVisible(false);
+        m_graph->seriesList().at(i+PLANES)->setVisible(true);
+
+    }
 }
 
 
@@ -350,7 +372,6 @@ int Plotter::scatter_main(QWidget * widget)
     container->setFocusPolicy(Qt::StrongFocus);
 
     //! [1]
-    //QWidget *widget = new QWidget;
     QHBoxLayout *hLayout = new QHBoxLayout(widget);
     QVBoxLayout *vLayout = new QVBoxLayout();
     hLayout->addWidget(container, 1);
@@ -388,8 +409,9 @@ int Plotter::scatter_main(QWidget * widget)
     QPushButton *cameraButton = new QPushButton(widget);
     cameraButton->setText(QStringLiteral("Change camera preset"));
 
-    QPushButton *itemCountButton = new QPushButton(widget);
-    itemCountButton->setText(QStringLiteral("Toggle item count"));
+    BiStateBtn *itemCountButton = new BiStateBtn(widget);
+    itemCountButton->setText(QStringLiteral("Show Ground Truth"));
+
 
     QCheckBox *backgroundCheckBox = new QCheckBox(widget);
     backgroundCheckBox->setText(QStringLiteral("Show background"));
@@ -442,6 +464,9 @@ int Plotter::scatter_main(QWidget * widget)
     QObject::connect(itemCountButton, &QPushButton::clicked, modifier,
                      &ScatterDataModifier::toggleItemCount);
 
+    QObject::connect(itemCountButton, &BiStateBtn::clicked,itemCountButton,
+                    &BiStateBtn::switchState);
+
     QObject::connect(backgroundCheckBox, &QCheckBox::stateChanged, modifier,
                      &ScatterDataModifier::setBackgroundEnabled);
     QObject::connect(gridCheckBox, &QCheckBox::stateChanged, modifier,
@@ -479,6 +504,20 @@ int Plotter::scatter_main(QWidget * widget)
     widget->show();
     return 0;
     //! [3] app.exec();
+}
+
+BiStateBtn::BiStateBtn(QWidget* parent):
+    QPushButton(parent),
+    SHOW_GT(false){
+}
+void BiStateBtn::switchState(){
+    if (SHOW_GT){
+        this->setText("Show Ground Truth");
+        SHOW_GT = false;
+    }else{
+        this->setText("Show Cluster Result");
+        SHOW_GT = true;
+    }
 }
 
 const int numberOfItems = 3600;
@@ -532,7 +571,7 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
     //! [2]
 
     //! [3]
-    addData();
+    //addData();
     //! [3]
 }
 
@@ -540,45 +579,6 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
 ScatterDataModifier::~ScatterDataModifier()
 {
     delete m_graph;
-}
-
-void ScatterDataModifier::addData()
-{
-    // Configure the axes according to the data
-    //! [4]
-    m_graph->axisX()->setTitle("X");
-    m_graph->axisY()->setTitle("Y");
-    m_graph->axisZ()->setTitle("Z");
-    //! [4]
-
-    //! [5]
-    QScatterDataArray *dataArray = new QScatterDataArray;
-    dataArray->resize(m_itemCount);
-    QScatterDataItem *ptrToDataArray = &dataArray->first();
-    //! [5]
-
-#ifdef RANDOM_SCATTER
-    for (int i = 0; i < m_itemCount; i++) {
-        ptrToDataArray->setPosition(randVector());
-        ptrToDataArray++;
-    }
-#else
-    //! [6]
-    float limit = qSqrt(m_itemCount) / 2.0f;
-    for (float i = -limit; i < limit; i++) {
-        for (float j = -limit; j < limit; j++) {
-            ptrToDataArray->setPosition(QVector3D(i + 0.5f,
-                                                  qCos(qDegreesToRadians((i * j) / m_curveDivider)),
-                                                  j + 0.5f));
-            ptrToDataArray++;
-        }
-    }
-    //! [6]
-#endif
-
-    //! [7]
-    m_graph->seriesList().at(0)->dataProxy()->resetArray(dataArray);
-    //! [7]
 }
 
 //! [8]
@@ -658,17 +658,6 @@ void ScatterDataModifier::toggleItemCount()
     if (m_itemCount == numberOfItems) {
         m_itemCount = lowerNumberOfItems;
         m_curveDivider = lowerCurveDivider;
-        m_graph->seriesList().at(0)->setVisible(true);
-        m_graph->seriesList().at(1)->setVisible(true);
-        m_graph->seriesList().at(2)->setVisible(true);
-        m_graph->seriesList().at(3)->setVisible(true);
-        m_graph->seriesList().at(4)->setVisible(false);
-        m_graph->seriesList().at(5)->setVisible(false);
-        m_graph->seriesList().at(6)->setVisible(false);
-        m_graph->seriesList().at(7)->setVisible(false);
-    } else {
-        m_itemCount = numberOfItems;
-        m_curveDivider = curveDivider;
         m_graph->seriesList().at(0)->setVisible(false);
         m_graph->seriesList().at(1)->setVisible(false);
         m_graph->seriesList().at(2)->setVisible(false);
@@ -677,16 +666,16 @@ void ScatterDataModifier::toggleItemCount()
         m_graph->seriesList().at(5)->setVisible(true);
         m_graph->seriesList().at(6)->setVisible(true);
         m_graph->seriesList().at(7)->setVisible(true);
+    } else {
+        m_itemCount = numberOfItems;
+        m_curveDivider = curveDivider;
+        m_graph->seriesList().at(0)->setVisible(true);
+        m_graph->seriesList().at(1)->setVisible(true);
+        m_graph->seriesList().at(2)->setVisible(true);
+        m_graph->seriesList().at(3)->setVisible(true);
+        m_graph->seriesList().at(4)->setVisible(false);
+        m_graph->seriesList().at(5)->setVisible(false);
+        m_graph->seriesList().at(6)->setVisible(false);
+        m_graph->seriesList().at(7)->setVisible(false);
     }
-}
-
-QVector3D ScatterDataModifier::randVector()
-{
-    return QVector3D(
-                (float)(QRandomGenerator::global()->bounded(100)) / 2.0f -
-                (float)(QRandomGenerator::global()->bounded(100)) / 2.0f,
-                (float)(QRandomGenerator::global()->bounded(100)) / 100.0f -
-                (float)(QRandomGenerator::global()->bounded(100)) / 100.0f,
-                (float)(QRandomGenerator::global()->bounded(100)) / 2.0f -
-                (float)(QRandomGenerator::global()->bounded(100)) / 2.0f);
 }

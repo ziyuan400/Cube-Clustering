@@ -11,17 +11,21 @@ Graph::Graph(int number_of_vertex){
     for(int i = 0; i < number_of_e; i++){
         x[i] = (float*)malloc (number_of_v * sizeof (float));
     }
+    p = (int*)malloc (number_of_v * sizeof (int));
     c = (float*)malloc (number_of_e * sizeof (float));
+    theta = (float*)malloc (number_of_v * sizeof (float));
     tri_cost = (float*)malloc (number_of_v * number_of_v * number_of_v * sizeof (float));
     tri_cost_p = (float*)malloc (number_of_v * number_of_v * number_of_v * sizeof (float));
-    theta = (float*)malloc (number_of_v * sizeof (float));
-    p = (int*)malloc (number_of_v * sizeof (int));
 }
 Graph::~Graph(){
-
-    //******************************************************************************
-    //    TODO: free memory.
-    //******************************************************************************
+    for(int i = 0; i < number_of_e; i++){
+        free(x[i]);
+    }
+    free(c);
+    free(tri_cost);
+    free(tri_cost_p);
+    free(theta);
+    free(p);
 }
 int* Graph::pi0(){
     for(int i = 0; i < number_of_v; i++){
@@ -46,10 +50,19 @@ void Graph::input_theta(float* input_theta){
 void Graph::input_points(float* points){
     if(points!=0){
         point_location = points;
-        return;
+    }else{
+        for(int i = 0; i < number_of_v*3; i++){
+            point_location[i] = random()%100;
+        }
     }
-    for(int i = 0; i < number_of_v*3; i++){
-        point_location[i] = random()%100;
+    for(int i = 0; i < number_of_v; i++){
+        for(int j = i+1; j < number_of_v; j++){
+            for(int k = j+1; k < number_of_v; k++){
+               int loc[3] = {i,j,k};
+               tri_cost[get_n_er_relation_id(loc, 3)] = cost_generator(point_location+i*3,point_location+j*3,point_location+k*3);
+               tri_cost_p[get_n_er_relation_id(loc, 3)] = 0.01;
+            }
+        }
     }
 }
 void Graph::input_c_cp(float *c, float *cp){
@@ -75,6 +88,12 @@ void Graph::input_x(float** input_x){
         for(int j = 0; j < number_of_v; j++){
             x[i][j] = range * ((((float) rand()) / (float) RAND_MAX)) + MIN_RAND ;
         }
+    }
+}
+
+void Graph::addPlotInfo(std::string name, int* data){
+    if(name.compare("gt") == 0 ){
+        plotter.log("", data, number_of_v, "gt", 0);
     }
 }
 
@@ -150,13 +169,13 @@ int* Graph::get_y_from_pi(int *pi){
             }
         }
     }
-    //plotter.print_to_cout("int", new_yOfPi, number_of_e, "NEW Y OF PI", 0);
+    plotter.log("int", new_yOfPi, number_of_e, "NEW Y OF PI", 0);
     return new_yOfPi;
 
 }
 
 //************************************************************
-//    |U|
+//    count the size of |U|
 //************************************************************
 int Graph::num_of_gruops(int* pi){
     int max = pi[0];
@@ -206,20 +225,18 @@ int Graph::get_edge_id(int start, int end){
 //      5  |                    //      5  |                      //    5  |
 //*****************************************************************************************************
 int Graph::get_n_er_relation_id(int* start, int n_er_relation){
-    std::vector<int> v ;            //  Use sortfor vectors.
+    std::vector<int> v ;            //  Use sort for vectors.
     for(int i = 0; i < n_er_relation; i++){
         v.push_back(start[i]);
     }
     std::sort(v.begin(), v.end(), std::less<int>());
 
-    int id = 0;
-
     //******************************************************************************
-    //    Use ineffecttive and only for cube version (e = |v|3)
-    //    TODO: use compact version(uncomment and verify)
+    //    Only for cube version (e = |v|3)
     //    TODO: id calculation for any n point relation.
     //******************************************************************************
 
+    int id = 0;
     if(n_er_relation == 3){
         int a = v.data()[0]+1, b = v.data()[1]+1 ,c = v.data()[2]+1;
         assert(a < b && b < c);
@@ -409,17 +426,31 @@ int* Graph::kl(int* pi){
     }
 }
 
+
 float Graph::cost_generator(float *p1, float *p2, float *p3){
-    float x_bar = (p1[0] + p2[0] + p3[0]) /3;
-    float y_bar = (p1[1] + p2[1] + p3[1]) /3;
-    float z_bar = (p1[2] + p2[2] + p3[2]) /3;
-    if(-0.001 < x_bar < 0.001){
-        x_bar = 0.001;
-    }
-    float a = (y_bar + z_bar)/x_bar;
-    float d = abs(a * p1[0] + p1[1] + p1[2]) +
-            abs(a * p2[0] + p2[1] + p2[2]) +
-            abs(a * p3[0] + p3[1] + p3[2]) /sqrt(a*a+1+1);
+    Eigen::Matrix3f A;
+    Eigen::Vector3f b;
+
+    float x1 = p1[0], x2 = p2[0], x3 = p3[0];
+    float y1 = p1[1], y2 = p2[1], y3 = p3[1];
+    float z1 = p1[2], z2 = p2[2], z3 = p3[2];
+    float   a11 = x1*x1 + x2*x2 + x3*x3,
+            a12 = x1*y1 + x2*y2 + x3*y3,
+            a13 = x1*z1 + x2*z2 + x3*z3,
+            a21 = x1*y1 + x2*y2 + x3*y3,
+            a22 = y1*y1 + y2*y2 + y3*y3,
+            a23 = y1*z1 + y2*z2 + y3*z3,
+            a31 = x1*z1 + x2*z2 + x3*z3,
+            a32 = y1*z1 + y2*z2 + y3*z3,
+            a33 = z1*z1 + z2*z2 + z3*z3;
+    A << a11,a12,a13,  a21,a22,a23,  a31,a32,a33;
+    b << 0, 0, 0;
+    Eigen::Vector3f x = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f>(A).eigenvectors().col(0);
+
+    float d =   abs(x[0] * x1 + x[1] * y1 + x[2] * z1) +
+                abs(x[0] * x2 + x[1] * y2 + x[2] * z2) +
+                abs(x[0] * x3 + x[1] * y3 + x[2] * z3);
+
     return d;
 }
 
@@ -455,28 +486,67 @@ float Graph::cube_phi_d(int *pi){
     }
     return phi;
 }
-float Graph::cube_phi_test(int *pi){
+float Graph::cube_phi_d(int *pi, int i, float old_phi, int new_group){
+    assert(number_of_v>3);
+    float phi = 0;
+    for(int j = 1; j < number_of_v; j++){
+        for(int k = j+1; k < number_of_v; k++){
+            if(i == j || i == k){
+                continue;
+            }
+            int loc[3] = {i,j,k};
+            if(pi[i] == pi[j] && pi[k] == pi[j]){
+                phi += tri_cost[get_n_er_relation_id(loc,3)];
+            }else if(pi[i] != pi[j] && pi[j] != pi[k] && pi[k] != pi[i]){
+                phi += tri_cost_p[get_n_er_relation_id(loc,3)];
+            }
+        }
+    }
+    float new_phi = 0;
+    for(int j = 1; j < number_of_v; j++){
+        for(int k = j+1; k < number_of_v; k++){
+            if(i == j || i == k){
+                continue;
+            }
+            int loc[3] = {i,j,k};
+            if(new_group == pi[j] && pi[k] == pi[j]){
+                new_phi += tri_cost[get_n_er_relation_id(loc,3)];
+            }else if(new_group != pi[j] && pi[j] != pi[k] && pi[k] != new_group){
+                new_phi += tri_cost_p[get_n_er_relation_id(loc,3)];
+            }
+        }
+    }
+//    std::cout<<"\n";
+//    for(int k = 0; k < number_of_v; k++){
+//        std::cout<<pi[k];
+//    }
+//    std::cout<<"\n old_phi "<<old_phi <<" phi " <<phi << " new_phi " <<new_phi<<" i " <<i<<" ng " <<new_group<<std::flush;
+    return old_phi - phi + new_phi ;
+}
+float Graph::cube_phi_test(){
     assert(number_of_v>3);
     float phi = 0;
     for(int i = 0; i < number_of_v; i++){
-        for(int j = i+1; j < number_of_v; j++){
-            for(int k = j+1; k < number_of_v; k++){
+//        for(int j = i+1; j < number_of_v; j++){
+//            for(int k = j+1; k < number_of_v; k++){
                 std::cout<<"i: "<<i
-                         <<"  j: "<<j
-                         <<"  k: "<<k
+                         <<"  j: "<<i+1
+                         <<"  k: "<<i+2
                          <<"  cost: "
-                         <<cost_generator(point_location+i*3,point_location+j*3,point_location+k*3)
+                         <<cost_generator(point_location+i*3
+                                          ,point_location+i*3+3
+                                          ,point_location+i*3+6)
                          <<"\n";
 
-            }
-        }
+//            }
+//        }
     }
     return phi;
 }
 
 
 int* Graph::cube_clustering(){
-    int ttl = 5;
+    int ttl = 20;
     pi0();
     number_of_e = number_of_v *number_of_v *number_of_v; //Compact version in TODO list;
 
@@ -601,16 +671,9 @@ int* Graph::cube_clustering(){
 
 
 
-
-
-
 int* Graph::cube_clustering_d(){
-    plotter.log("float", point_location, number_of_v*3, "Point-Location", 0);
     int ttl = 100;
-    //TODO: remove hard coding group number
-    int groups = 4;
     pi0();
-    number_of_e = number_of_v *number_of_v *number_of_v; //Compact version in TODO list;
 
     float min_delta = -1, new_phi, new_delta,
             *delta_seq,
@@ -642,13 +705,18 @@ int* Graph::cube_clustering_d(){
 
             total_groups = num_of_gruops(pi_seq[i]);
             phi_seq[i] = cube_phi_d(pi_seq[i]);
-            for(int j = 0; j < number_of_v; j++){
+
+            srand(unsigned(time(NULL)));
+            std::vector<int> shufflej(number_of_v);
+            std::iota (std::begin(shufflej), std::end(shufflej), 0);
+            shuffle(shufflej.begin(), shufflej.end(), std::default_random_engine(unsigned(time(NULL))));
+            for(int j : shufflej){
                 //Try to move every items in V
                 while(a[j] < 0){
                     j++;
                 }
 
-                for(int k = 0; k < number_of_v; k++){
+                for(int k = 0; k < total_groups+1; k++){
                     //Try to move to |U|+1 groups
                     //*****************************************************************************
                     //    Prevent Fake Move:  Move that dont REALLY change of the partition
@@ -672,10 +740,13 @@ int* Graph::cube_clustering_d(){
                     }
 
                     new_pi = move(j, k, pi_seq[i]);
-                    new_phi = cube_phi_d(new_pi);
+                    new_phi = cube_phi_d(pi_seq[i], j, phi_seq[i], k);
                     new_delta = new_phi - phi_seq[i];
 
-                    if((new_delta < min_delta && num_of_gruops(new_pi)<=groups) || best_a < 0){
+                    if( //(
+                        new_delta < min_delta
+                        //&& num_of_gruops(new_pi)<=groups)
+                        || best_a < 0){
                         best_a = j;
                         best_U = k;
                         min_delta = new_delta;
@@ -690,7 +761,6 @@ int* Graph::cube_clustering_d(){
             delta_seq[i] = min_delta;
             a[i] = -1;
         }
-
 
         //************************************************************
         //                                        ^
@@ -710,17 +780,16 @@ int* Graph::cube_clustering_d(){
                 free(pi_seq[i+1]);
             }
         }
-
         plotter.log("float", delta_seq, number_of_v, "Delta_seq", 0);
         plotter.log("diff", min_pi, number_of_v, "Best Move Of The Sequence", min_delta);
-        if(min_delta >= 0){
+        if(min_delta >= -0.0001){
             plotter.log("diff", min_pi, number_of_v, "Final Selected Partition", min_delta);
+            std::cout<<"Rounds: "<<100-ttl<<"\n";
         }else{
             free(p);
             p = min_pi;
         }
-    }while(min_delta < 0 && ttl--);
-
+    }while(min_delta < -0.0001 && ttl--);
 
     free(pi_seq);
     free(delta_seq);
@@ -728,13 +797,68 @@ int* Graph::cube_clustering_d(){
     free(a);
     plotter.print_to_cout();
 
-    plotter.log("points", point_location, 20, "", 0);
-    plotter.log("pi", p, 20, "", 0);
-    plotter.print_to_qtTextField();
     return p;
 }
 
 
+float Graph::evaluation(int* gt){
+    int* pi = this->p;
+    int pi_groups = num_of_gruops(pi);
+    int gt_groups = num_of_gruops(gt);
+    float acc = -1, acc_candidate = 0, hit = 0, miss = 0;
+    std::vector<int> gt_candidate(gt_groups);
+    std::iota (std::begin(gt_candidate), std::end(gt_candidate), 0);
+    int *match = new int[pi_groups];
+    for(int source = 0; source < pi_groups; source++){
+        acc = -1;
+        for (auto destination = gt_candidate.begin(); destination != gt_candidate.end() ; destination++){
+            if(*destination == -1){
+                continue;
+            }
+            hit = 0;
+            miss = 0;
+            for(int i = 0; i < number_of_v; i++){
+                if(pi[i] == source){
+                    if(gt[i] == *destination){
+                        hit++;
+                    }else{
+                        miss++;
+                    }
+                }
+            }
+            acc_candidate = hit/(hit + miss);
+            if(acc_candidate > acc){
+                acc = acc_candidate;
+                match[source] = *destination;
+            }
+        }        
+        gt_candidate[match[source]] = -1;
+    }
+
+    hit = 0;
+    miss = 0;
+    for(int i = 0; i < number_of_v; i++){
+        if(match[pi[i]] == gt[i]){
+            hit++;
+        }else{
+            miss++;
+        }
+    }
+    acc = hit/(hit + miss);
+    plotter.log("int", p, number_of_v, "p", 0)->print_to_cout();
+    plotter.log("int", match, pi_groups, "match", 0)->print_to_cout();
+    plotter.log("int", gt, number_of_v, "gt", 0)->print_to_cout();
+    std::cout<<"Acc: "<<acc<<"\n";
+    for(int i = 0; i < number_of_v; i++){
+        pi[i] = match[pi[i]];
+    }
+
+
+    plotter.log("points", point_location, number_of_v, "", 0);
+    plotter.log("pi", p, number_of_v, "", 0);
+    plotter.print_to_qtTextField();
+    return acc;
+}
 
 
 

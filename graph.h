@@ -3,9 +3,11 @@
 
 #include <cassert>
 #include <vector>
+#include <random>
 #include <algorithm>
 
 #include <plotter.h>
+#include <Eigen/Dense>
 
 class Graph{
 private:
@@ -38,29 +40,39 @@ public:
 
     float phi(int* pi);
     float cube_phi(int* new_pi);
+    float cube_phi_d(int *pi);
+    float cube_phi_d(int *pi, int i, float old_phi, int new_group);
+    float cost_generator(float *p1, float *p2, float *p3);
+    int get_edge_id(int start, int end);
+    int get_n_er_relation_id(int* start, int n_er_relation);
+
+    //***************************************
+    //    Algorithms
+    //***************************************
+
     int* greedy_move(int* pi);
     int* kl(int* pi);
     int* cube_clustering();
-    float cost_generator(float *p1, float *p2, float *p3);
+    int *cube_clustering_d();
 
     //***************************************
     //    Tools
     //***************************************
+
     int* move(int a,int U, int* pi);
-    int get_edge_id(int start, int end);
-    int get_n_er_relation_id(int* start, int n_er_relation);
     int get_y_of_pi(int a, int a_prime);
     int num_of_gruops(int* pi);
     int* get_y_from_pi(int *pi);
     void print(char c);
+    void addPlotInfo(std::string name, int *data);
+    float cube_phi_test();
+    float evaluation(int *gt);
+
     //***************************************
     //    To-Do list
     //***************************************
     float* compute_p_of_Y(float* x);
     float* normal_distribution(float* theta, float rou);
-    int *cube_clustering_d();
-    float cube_phi_d(int *pi);
-    float cube_phi_test(int *pi);
 };
 
 

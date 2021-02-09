@@ -32,7 +32,7 @@
 
 #include <iostream>
 #include "stdio.h"
-#include "mainwindow.h"
+//#include "mainwindow.h"
 
 #include <QApplication>
 #include <QtConcurrent>
@@ -72,8 +72,8 @@ using json = nlohmann::json;
 class Plotter
 {
 private:
+    bool ENABLE_TEACE;
     std::string str;
-    MainWindow* w;
     json json_log;
 public:
     Plotter();
@@ -82,6 +82,8 @@ public:
     Plotter* log(std::string d_type, void *pointer, int lenth, std::string name, float diff);
     Plotter* log(std::string d_type, void *pointer, int lenth, std::string name, int second_dim);
 
+    Plotter *enable();
+    Plotter *disable();
     int scatter_main(QWidget *widget);
 };
 
@@ -128,5 +130,15 @@ private:
     bool m_smooth;
     int m_itemCount;
     float m_curveDivider;
+};
+
+class BiStateBtn : public QPushButton{
+    Q_OBJECT
+private:
+    bool SHOW_GT;
+public:
+    explicit BiStateBtn(QWidget* parent);
+Q_SLOT
+    void switchState();
 };
 #endif // PLOTTER_H
